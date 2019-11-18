@@ -120,7 +120,7 @@ public:
 
 	size_t getResultSize() const { return resultSet.size(); }
 
-	void cmd_line(FILE *fin, FILE *fout);
+	void cmd_line();
 
 	static int colNo;
 };

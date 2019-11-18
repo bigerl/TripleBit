@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
 	QUERY_PATH = argv[2];
 
-	repo->cmd_line(stdin, stderr);
+	repo->cmd_line();
 	delete repo;
 
 	return 0;

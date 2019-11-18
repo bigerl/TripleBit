@@ -206,7 +206,7 @@ TripleBitRepository *TripleBitRepository::create(const string path) {
 
 	if (OSFile::fileExists(filename) == false) {
 		//file dose not exist, repository has not been build;
-		fprintf(stderr, "database files dose not exist!");
+		fprintf(stdin, "database files dose not exist!");
 		return NULL;
 	}
 	// load the repository from image files;
@@ -256,7 +256,7 @@ TripleBitRepository *TripleBitRepository::create(const string path) {
 	repo->buffer = new EntityIDBuffer();
 	repo->columnFinder = new FindEntityID(repo);
 
-	cerr << "load complete!" << endl;
+	cout << "load complete!" << endl;
 	repo->bitmapQuery = new TripleBitQuery(*repo);
 	repo->query = new RDFQuery(repo->bitmapQuery, repo);
 
@@ -305,10 +305,9 @@ Status TripleBitRepository::execute(string queryStr) {
 
 extern char *QUERY_PATH;
 
-void TripleBitRepository::cmd_line(FILE *fin, FILE *fout) {
+void TripleBitRepository::cmd_line() {
 	while (true) {
-		fflush(fin);
-		fprintf(fout, ">>>");
+		std::cout << "triplebit\n>>>" << std::endl;
 
 		string query;
 		std::getline(std::cin, query);

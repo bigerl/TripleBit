@@ -759,7 +759,7 @@ Status ChunkManager::getChunkPosByID(ID id, unsigned typeID, unsigned &offset) {
 		return chunkIndex[1]->getOffsetByID(id, offset, typeID);
 	}
 
-	cerr << "unknown type id" << endl;
+	std::cout << "unknown type id" << endl;
 	return ERROR;
 }
 
