@@ -307,7 +307,8 @@ extern char *QUERY_PATH;
 
 void TripleBitRepository::cmd_line() {
 	while (true) {
-		std::cout << "triplebit\n>>>" << std::endl;
+		std::cout << ">>>";
+		flush(std::cout);
 
 		string query;
 		std::getline(std::cin, query);

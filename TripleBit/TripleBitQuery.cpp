@@ -1168,7 +1168,7 @@ Status TripleBitQuery::findEntityIDByTriple(TripleBitQueryGraph::TripleNode *tri
 		case TripleBitQueryGraph::TripleNode::NOOP:
 			break;
 		default:
-			cerr << "unsupported operation " << triple->scanOperation << endl;
+			cout << "unsupported operation " << triple->scanOperation << endl;
 			break;
 	}
 //	gettimeofday(&end,NULL);
@@ -1204,7 +1204,7 @@ Status TripleBitQuery::findEntityIDByKnowBuffer(TripleBitQueryGraph::TripleNode 
 			break;
 		case TripleBitQueryGraph::TripleNode::FINDSPO:
 			//entityFinder->findSPO(buffer,knowBuffer,knowElement);
-			cerr << "unsupported operation " << triple->scanOperation << endl;
+			cout << "unsupported operation " << triple->scanOperation << endl;
 			break;
 		case TripleBitQueryGraph::TripleNode::FINDSOBYP:
 			entityFinder->findSOByKnowBuffer(triple->predicate, buffer, knowBuffer, knowElement);
@@ -1216,7 +1216,7 @@ Status TripleBitQuery::findEntityIDByKnowBuffer(TripleBitQueryGraph::TripleNode 
 				entityFinder->findSByKnowBuffer(triple->predicate,buffer,knowBuffer,knowElement);
 				break;*/
 		default:
-			cerr << "error" << endl;
+			cout << "error" << endl;
 			exit(-1);
 	}
 	return OK;

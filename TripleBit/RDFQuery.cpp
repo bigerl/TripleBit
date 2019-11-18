@@ -56,18 +56,21 @@ Status RDFQuery::Execute(string &queryString, vector<string> &resultSet) {
 	try {
 		parser->parse();
 	} catch (const SPARQLParser::ParserException &e) {
-		cerr << "parse error: " << e.message << endl;
+		cout << "parse error: " << e.message << endl;
+		cout << " QUERY FAILED " << std::endl;
 		return ERROR;
 	}
 
 	queryGraph->Clear();
 
 	if (!this->semAnalysis->transform(*parser, *queryGraph)) {
+		cout << " QUERY SUCCEEDED " << endl;
 		return NOT_FOUND;
 	}
 
 	if (queryGraph->knownEmpty() == true) {
-		cerr << "Empty result" << endl;
+		cout << "Empty result" << endl;
+		cout << " QUERY SUCCEEDED " << endl;
 		return OK;
 	}
 
@@ -75,7 +78,7 @@ Status RDFQuery::Execute(string &queryString, vector<string> &resultSet) {
 	//Print();
 	Status state_ = planGen->generatePlan(*queryGraph);
 	if (state_ != OK){
-		cerr << " QUERY FAILED " << std::endl;
+		cout << " QUERY FAILED " << std::endl;
 		return state_;
 	}
 
@@ -85,11 +88,11 @@ Status RDFQuery::Execute(string &queryString, vector<string> &resultSet) {
 	//bitmapQuery->releaseBuffer();
 	state_ = bitmapQuery->query(queryGraph, resultSet);
 	if (state_ != OK){
-		cerr << " QUERY FAILED " << std::endl;
+		cout << " QUERY FAILED " << std::endl;
 		return state_;
 	}
 	gettimeofday(&end, NULL);
-	cerr << " QUERY SUCCEEDED " << endl;
+	cout << " QUERY SUCCEEDED " << endl;
 	//cout<<"time elapsed: "<<t.elapsed()<<endl;
 	queryGraph->Clear();
 	delete lexer;
