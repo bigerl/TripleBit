@@ -14,7 +14,9 @@
 //---------------------------------------------------------------------------
 
 class MemoryBuffer;
+
 class ChunkManager;
+
 class MMapBuffer;
 
 #include "TripleBit.h"
@@ -22,18 +24,20 @@ class MMapBuffer;
 
 class LineHashIndex {
 public:
-	struct Point{
+	struct Point {
 		ID x;
 		ID y;
 	};
 
-	enum IndexType { SUBJECT_INDEX, OBJECT_INDEX};
+	enum IndexType {
+		SUBJECT_INDEX, OBJECT_INDEX
+	};
 private:
-	MemoryBuffer* idTable;
-	MemoryBuffer* offsetTable;
-	ID* idTableEntries;
-	ID* offsetTableEntries;
-	ChunkManager& chunkManager;
+	MemoryBuffer *idTable;
+	MemoryBuffer *offsetTable;
+	ID *idTableEntries;
+	ID *offsetTableEntries;
+	ChunkManager &chunkManager;
 	IndexType indexType;
 	unsigned int tableSize;
 	unsigned lineNo;
@@ -47,21 +51,33 @@ private:
 	ID startID[4];
 private:
 	void insertEntries(ID id, unsigned offset);
+
 	int searchChunk(ID id);
+
 	bool buildLine(int startEntry, int endEntry, int lineNo);
+
 public:
-	LineHashIndex(ChunkManager& _chunkManager, IndexType type);
+	LineHashIndex(ChunkManager &_chunkManager, IndexType type);
+
 	Status buildIndex(unsigned chunkType);
-	Status getOffsetByID(ID id, unsigned& offset, unsigned typeID);
-	Status getFirstOffsetByID(ID id, unsigned& offset, unsigned typeID);
-	Status getYByID(ID id,EntityIDBuffer* entBuffer,unsigned typeID);
-	void save(MMapBuffer*& indexBuffer);
+
+	Status getOffsetByID(ID id, unsigned &offset, unsigned typeID);
+
+	Status getFirstOffsetByID(ID id, unsigned &offset, unsigned typeID);
+
+	Status getYByID(ID id, EntityIDBuffer *entBuffer, unsigned typeID);
+
+	void save(MMapBuffer *&indexBuffer);
+
 	virtual ~LineHashIndex();
+
 private:
 	bool isBufferFull();
+
 public:
-	static LineHashIndex* load(ChunkManager& manager, IndexType type, char* buffer, size_t& offset);
-	static void unload( char* buffer, size_t& offset);
+	static LineHashIndex *load(ChunkManager &manager, IndexType type, char *buffer, size_t &offset);
+
+	static void unload(char *buffer, size_t &offset);
 };
 
 #endif /* LINEHASHINDEX_H_ */

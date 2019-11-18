@@ -17,8 +17,8 @@
 #include "TripleBit.h"
 
 class PredicateTable {
-	StringIDSegment* prefix_segment;
-	StringIDSegment* suffix_segment;
+	StringIDSegment *prefix_segment;
+	StringIDSegment *suffix_segment;
 	LengthString prefix, suffix;
 	LengthString searchLen;
 
@@ -26,28 +26,37 @@ class PredicateTable {
 	string searchStr;
 
 private:
-	Status getPrefix(const char* URI);
+	Status getPrefix(const char *URI);
+
 public:
-	PredicateTable() : SINGLE("single") { }
+	PredicateTable() : SINGLE("single") {}
+
 	PredicateTable(const string dir);
+
 	virtual ~PredicateTable();
-	Status insertTable(const char* str, ID& id);
+
+	Status insertTable(const char *str, ID &id);
+
 	string getPredicateByID(ID id);
-	Status getPredicateByID(string& URI, ID id);
-	Status getIDByPredicate(const char* str, ID& id);
+
+	Status getPredicateByID(string &URI, ID id);
+
+	Status getIDByPredicate(const char *str, ID &id);
 
 	size_t getSize() {
 		return prefix_segment->getSize() + suffix_segment->getSize();
 	}
 
-	ID getPredicateCount(){
+	ID getPredicateCount() {
 		return suffix_segment->idStroffPool->size();
 	}
 
 	size_t getPredicateNo();
+
 	void dump();
+
 public:
-	static PredicateTable* load(const string dir);
+	static PredicateTable *load(const string dir);
 };
 
 #endif /* PREDICATETABLE_H_ */

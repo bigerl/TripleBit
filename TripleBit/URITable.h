@@ -17,10 +17,11 @@
 #include "StringIDSegment.h"
 
 using namespace std;
+
 class URITable {
 	ID prefixStartID;
-	StringIDSegment* prefix_segment;
-	StringIDSegment* suffix_segment;
+	StringIDSegment *prefix_segment;
+	StringIDSegment *suffix_segment;
 	LengthString prefix, suffix;
 	LengthString searchLen;
 
@@ -28,28 +29,37 @@ class URITable {
 	string searchStr;
 
 private:
-	Status getPrefix(const char*  URI);
+	Status getPrefix(const char *URI);
+
 public:
 	URITable();
+
 	URITable(const string dir);
+
 	virtual ~URITable();
-	Status insertTable(const char* URI,ID& id);
-	Status getIdByURI(const char* URI,ID& id);
-	Status getURIById(string& URI,ID id);
+
+	Status insertTable(const char *URI, ID &id);
+
+	Status getIdByURI(const char *URI, ID &id);
+
+	Status getURIById(string &URI, ID id);
 
 	size_t getSize() {
-		cout<<"max id: "<<suffix_segment->getMaxID()<<endl;
+		cout << "max id: " << suffix_segment->getMaxID() << endl;
 		return prefix_segment->getSize() + suffix_segment->getSize();
 	}
 
-	ID getUriCount(){
+	ID getUriCount() {
 		return suffix_segment->idStroffPool->size();
 	}
 
 	void dump();
+
 public:
 	static ID startID;
-	static URITable* load(const string dir);
+
+	static URITable *load(const string dir);
+
 	static ID getMaxID();
 };
 

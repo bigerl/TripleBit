@@ -14,24 +14,28 @@
 //---------------------------------------------------------------------------
 
 class ChunkManager;
+
 class MemoryBuffer;
+
 class MMapBuffer;
 
 #include "TripleBit.h"
 
 class HashIndex {
 public:
-	enum IndexType { SUBJECT_INDEX, OBJECT_INDEX};
+	enum IndexType {
+		SUBJECT_INDEX, OBJECT_INDEX
+	};
 private:
 	/// store the chunks' position and the offset in chunk
-	MemoryBuffer* hashTable;
-	ID* hashTableEntries;
+	MemoryBuffer *hashTable;
+	ID *hashTableEntries;
 	//MMapBuffer* secondaryHashTable;
 	/// the current size of hash index;
 	unsigned int hashTableSize;
 	//unsigned int secondaryHashTableSize;
 
-	ChunkManager& chunkManager;
+	ChunkManager &chunkManager;
 	/// index type;
 	IndexType type;
 
@@ -40,20 +44,29 @@ private:
 	//ID* secondaryHashTableWriter;
 protected:
 	void insertFirstValue(unsigned value);
+
 public:
-	HashIndex(ChunkManager& _chunkManager, IndexType type);
+	HashIndex(ChunkManager &_chunkManager, IndexType type);
+
 	virtual ~HashIndex();
+
 	/// build hash index; chunkType: 1 or 2
 	Status buildIndex(unsigned chunkType);
+
 	/// search the chunk and offset in chunk by id; typeID 1 or 2
-	Status getOffsetByID(ID id, unsigned& offset, unsigned typeID);
-	void save(MMapBuffer*& buffer);
+	Status getOffsetByID(ID id, unsigned &offset, unsigned typeID);
+
+	void save(MMapBuffer *&buffer);
+
 public:
-	static HashIndex* load(ChunkManager& manager, IndexType type, char* buffer, unsigned int& offset);
+	static HashIndex *load(ChunkManager &manager, IndexType type, char *buffer, unsigned int &offset);
+
 private:
 	/// insert a record into index; position is the position of chunk in chunks vector.
 	Status hashInsert(ID id, unsigned int offset);
+
 	unsigned hash(ID id);
+
 	unsigned next(ID id);
 };
 

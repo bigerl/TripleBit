@@ -16,7 +16,9 @@
 #define MEMORYBUFFER_DEBUG 1
 
 class EntityIDBuffer;
+
 class ColumnBuffer;
+
 #include "TripleBit.h"
 #include <iostream>
 
@@ -29,26 +31,40 @@ using namespace std;
 
 class MemoryBuffer {
 	unsigned size;
-	char* buffer;
-	char* currentHead;
+	char *buffer;
+	char *currentHead;
 public:
 	static unsigned pagesize;
 public:
 	friend class EntityIDBuffer;
+
 	friend class ColumnBuffer;
+
 	MemoryBuffer();
+
 	MemoryBuffer(unsigned size);
+
 	virtual ~MemoryBuffer();
-	char* resize(unsigned increasedSize);
+
+	char *resize(unsigned increasedSize);
+
 	Status resize(unsigned increasedSize, bool zero);
-	char* getBuffer();
-	char* getBuffer(int pos);
+
+	char *getBuffer();
+
+	char *getBuffer(int pos);
+
 	size_t getSize() { return size; }
-	size_t get_length() {return size; }
-	char* get_address() { return buffer; }
+
+	size_t get_length() { return size; }
+
+	char *get_address() { return buffer; }
+
 	void memset(char value);
-	void save(ofstream& ofile);
-	void load(ifstream& ifile);
+
+	void save(ofstream &ofile);
+
+	void load(ifstream &ifile);
 
 private:
 };
@@ -57,19 +73,26 @@ private:
 //// class URIStatisticsBuffer;
 ////////////////////////////////////////////////////////////////////////////////////////
 class URIStatisticsBuffer {
-	MemoryBuffer* buffer;
+	MemoryBuffer *buffer;
 	int chunkCount;
-	unsigned short* p;
+	unsigned short *p;
 public:
 	static int totalStatisticsPerPage;
+
 	Status addCount(ID id);
-	Status getCount(ID id, unsigned short& count);
+
+	Status getCount(ID id, unsigned short &count);
+
 	URIStatisticsBuffer();
+
 	virtual ~URIStatisticsBuffer();
-	void save(ofstream& ofile);
-	void load(ifstream& ifile);
+
+	void save(ofstream &ofile);
+
+	void load(ifstream &ifile);
+
 private:
-	unsigned short*  getBuffer(ID id);
+	unsigned short *getBuffer(ID id);
 
 private:
 };
@@ -79,17 +102,22 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////
 class StatementReificationTable {
 private:
-	MemoryBuffer * buffer;
-	ID* currentBuffer;			//current insert buffer;
-	ID pos;						//current position can be inserted into;
+	MemoryBuffer *buffer;
+	ID *currentBuffer;            //current insert buffer;
+	ID pos;                        //current position can be inserted into;
 public:
 	StatementReificationTable();
+
 	Status insertStatementReification(ID statement, ID column);
-	Status getColumn(ID statement, ID& column);
+
+	Status getColumn(ID statement, ID &column);
+
 	virtual ~StatementReificationTable();
 
-	void save(ofstream& ofile);
-	void load(ifstream& ifile);
+	void save(ofstream &ofile);
+
+	void load(ifstream &ifile);
+
 private:
 };
 

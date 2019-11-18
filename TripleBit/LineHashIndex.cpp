@@ -22,8 +22,7 @@
  * f(x)=kx + b;
  * used to calculate the parameter k and b;
  */
-static bool calculateLineKB(vector<LineHashIndex::Point>& a, double& k, double& b, int pointNo)
-{
+static bool calculateLineKB(vector<LineHashIndex::Point> &a, double &k, double &b, int pointNo) {
 	if (pointNo < 2)
 		return false;
 
@@ -45,7 +44,8 @@ static bool calculateLineKB(vector<LineHashIndex::Point>& a, double& k, double& 
 	return true;
 }
 
-LineHashIndex::LineHashIndex(ChunkManager& _chunkManager, IndexType type) : chunkManager(_chunkManager), indexType(type){
+LineHashIndex::LineHashIndex(ChunkManager &_chunkManager, IndexType type) : chunkManager(_chunkManager),
+                                                                            indexType(type) {
 	// TODO Auto-generated constructor stub
 	idTable = NULL;
 	offsetTable = NULL;
@@ -67,8 +67,7 @@ LineHashIndex::~LineHashIndex() {
  * From startEntry to endEntry in idtableEntries build a line;
  * @param lineNo: the lineNo-th line to be build;
  */
-bool LineHashIndex::buildLine(int startEntry, int endEntry, int lineNo)
-{
+bool LineHashIndex::buildLine(int startEntry, int endEntry, int lineNo) {
 	vector<Point> vpt;
 	Point pt;
 	int i;
@@ -128,18 +127,17 @@ bool LineHashIndex::buildLine(int startEntry, int endEntry, int lineNo)
 
 static ID splitID[3] = {255, 65535, 16777215};
 
-Status LineHashIndex::buildIndex(unsigned chunkType)
-{
+Status LineHashIndex::buildIndex(unsigned chunkType) {
 	if (idTable == NULL) {
 		idTable = new MemoryBuffer(HASH_CAPACITY);
 		tableSize = idTable->getSize() / sizeof(unsigned);
 		offsetTable = new MemoryBuffer(HASH_CAPACITY);
-		idTableEntries = (ID*) idTable->getBuffer();
-		offsetTableEntries = (ID*) offsetTable->getBuffer();
+		idTableEntries = (ID *) idTable->getBuffer();
+		offsetTableEntries = (ID *) offsetTable->getBuffer();
 		tableSize = 0;
 	}
 
-	const uchar* begin, *limit, *reader;
+	const uchar *begin, *limit, *reader;
 	ID x, y;
 
 	int lineNo = 0;
@@ -160,13 +158,14 @@ Status LineHashIndex::buildIndex(unsigned chunkType)
 		limit = chunkManager.getEndPtr(1);
 		while (reader < limit) {
 			x = 0;
-			const uchar* temp = Chunk::skipBackward(reader);
+			const uchar *temp = Chunk::skipBackward(reader);
 			Chunk::readXId(temp, x);
 			insertEntries(x, temp - begin);
 
-			if(x > splitID[lineNo]) {
-				startEntry = endEntry; endEntry = tableSize;
-				if(buildLine(startEntry, endEntry, lineNo) == true) {
+			if (x > splitID[lineNo]) {
+				startEntry = endEntry;
+				endEntry = tableSize;
+				if (buildLine(startEntry, endEntry, lineNo) == true) {
 					lineNo++;
 				}
 			}
@@ -178,8 +177,9 @@ Status LineHashIndex::buildIndex(unsigned chunkType)
 		Chunk::readXId(reader, x);
 		insertEntries(x, reader - begin);
 
-		startEntry = endEntry; endEntry = tableSize;
-		if(buildLine(startEntry, endEntry, lineNo) == true) {
+		startEntry = endEntry;
+		endEntry = tableSize;
+		if (buildLine(startEntry, endEntry, lineNo) == true) {
 			lineNo++;
 		}
 	}
@@ -203,13 +203,14 @@ Status LineHashIndex::buildIndex(unsigned chunkType)
 		while (reader < limit) {
 			x = 0;
 			y = 0;
-			const uchar* temp = Chunk::skipBackward(reader);
+			const uchar *temp = Chunk::skipBackward(reader);
 			Chunk::readYId(Chunk::readXId(temp, x), y);
 			insertEntries(x + y, temp - begin);
 
-			if((x + y) > splitID[lineNo]) {
-				startEntry = endEntry; endEntry = tableSize;
-				if(buildLine(startEntry, endEntry, lineNo) == true) {
+			if ((x + y) > splitID[lineNo]) {
+				startEntry = endEntry;
+				endEntry = tableSize;
+				if (buildLine(startEntry, endEntry, lineNo) == true) {
 					lineNo++;
 				}
 			}
@@ -221,26 +222,25 @@ Status LineHashIndex::buildIndex(unsigned chunkType)
 		Chunk::readYId(Chunk::readXId(reader, x), y);
 		insertEntries(x + y, reader - begin);
 
-		startEntry = endEntry; endEntry = tableSize;
-		if(buildLine(startEntry, endEntry, lineNo) == true) {
+		startEntry = endEntry;
+		endEntry = tableSize;
+		if (buildLine(startEntry, endEntry, lineNo) == true) {
 			lineNo++;
 		}
 	}
 	return OK;
 }
 
-bool LineHashIndex::isBufferFull()
-{
+bool LineHashIndex::isBufferFull() {
 	return tableSize >= idTable->getSize() / 4;
 }
 
-void LineHashIndex::insertEntries(ID id, unsigned offset)
-{
+void LineHashIndex::insertEntries(ID id, unsigned offset) {
 	if (isBufferFull() == true) {
 		idTable->resize(HASH_CAPACITY);
-		idTableEntries = (ID*) idTable->get_address();
+		idTableEntries = (ID *) idTable->get_address();
 		offsetTable->resize(HASH_CAPACITY);
-		offsetTableEntries = (ID*) offsetTable->get_address();
+		offsetTableEntries = (ID *) offsetTable->get_address();
 	}
 	idTableEntries[tableSize] = id;
 	offsetTableEntries[tableSize] = offset;
@@ -248,46 +248,45 @@ void LineHashIndex::insertEntries(ID id, unsigned offset)
 	tableSize++;
 }
 
-int LineHashIndex::searchChunk(ID id)
-{
+int LineHashIndex::searchChunk(ID id) {
 	int lowerchunk, upperchunk;
 	int lineNo;
-	if(id < startID[0]) {
+	if (id < startID[0]) {
 		return -1;
-	} else if(id < startID[1]) {
+	} else if (id < startID[1]) {
 		lineNo = 0;
-	} else if(id < startID[2]) {
+	} else if (id < startID[2]) {
 		lineNo = 1;
-	} else if(id < startID[3]) {
+	} else if (id < startID[3]) {
 		lineNo = 2;
 	} else {
 		lineNo = 3;
 	}
 
- 	lowerchunk = (int)::floor(lowerk[lineNo] * id + lowerb[lineNo]);
- 	upperchunk = (int)::ceil(upperk[lineNo] * id + upperb[lineNo]);
+	lowerchunk = (int) ::floor(lowerk[lineNo] * id + lowerb[lineNo]);
+	upperchunk = (int) ::ceil(upperk[lineNo] * id + upperb[lineNo]);
 
- 	if(upperchunk > (int)tableSize || upperchunk < 0) upperchunk = tableSize - 1;
- 	if(lowerchunk < 0 || lowerchunk > (int)tableSize) lowerchunk = 0;
+	if (upperchunk > (int) tableSize || upperchunk < 0) upperchunk = tableSize - 1;
+	if (lowerchunk < 0 || lowerchunk > (int) tableSize) lowerchunk = 0;
 
- 	int low = lowerchunk;
- 	int high = upperchunk;
-	if(low > high){
-                low = 0;
-                high = tableSize-1;
-        }
+	int low = lowerchunk;
+	int high = upperchunk;
+	if (low > high) {
+		low = 0;
+		high = tableSize - 1;
+	}
 
- 	int mid;
+	int mid;
 
- 	if(low == high)
- 		return low;
- 	//find the first entry >= id;
- 	while (low != high) {
+	if (low == high)
+		return low;
+	//find the first entry >= id;
+	while (low != high) {
 		mid = low + (high - low) / 2;
 
-		if(id > idTableEntries[mid]) {
+		if (id > idTableEntries[mid]) {
 			low = mid + 1;
-		} else if((!mid) || id > idTableEntries[mid - 1]) {
+		} else if ((!mid) || id > idTableEntries[mid - 1]) {
 			break;
 		} else {
 			high = mid;
@@ -348,19 +347,18 @@ int LineHashIndex::searchChunk(ID id)
  	} else {
  		res = mid;
  	}*/
-	if (idTableEntries[res] >= id && res >0) {
+	if (idTableEntries[res] >= id && res > 0) {
 		res--;
 		while (idTableEntries[res] >= id && res > 0)
 			res--;
 	} else {
-		while (res+1 < tableSize && idTableEntries[res] < id && idTableEntries[res + 1] < id)
+		while (res + 1 < tableSize && idTableEntries[res] < id && idTableEntries[res + 1] < id)
 			res++;
 	}
 	return res;
 }
 
-Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
-{
+Status LineHashIndex::getOffsetByID(ID id, unsigned &offset, unsigned typeID) {
 	int offsetId = this->searchChunk(id);
 	if (offsetId == -1) {
 		//cout<<"id: "<<id<<endl;
@@ -375,7 +373,7 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 	unsigned pBegin = offsetTableEntries[offsetId];
 	unsigned pEnd = offsetTableEntries[offsetId + 1];
 
-	const uchar* beginPtr = NULL, *reader = NULL;
+	const uchar *beginPtr = NULL, *reader = NULL;
 	int low, high, mid = 0, lastmid = 0;
 	ID x, y;
 
@@ -398,7 +396,7 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 				//x = 0;
 				reader = Chunk::skipBackward(beginPtr + low);
 				Chunk::readXId(reader, x);
-				if (reader < beginPtr ||x < id) {
+				if (reader < beginPtr || x < id) {
 					offset = lastmid;
 					return OK;
 				}
@@ -427,7 +425,7 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 					//x = 0;
 					reader = Chunk::skipBackward(beginPtr + mid);
 					Chunk::readXId(reader, x);
-					if (reader < beginPtr ||x < id) {
+					if (reader < beginPtr || x < id) {
 						offset = lastmid;
 						return OK;
 					}
@@ -446,29 +444,29 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
                         lastmid = mid;*/
 
 		}
-	/*	const uchar* tempoff = Chunk::skipBackward(beginPtr + mid);
-		tempoff = Chunk::readYId(Chunk::readXId(reader, x), y);
-		cout <<"1.one x:" << x << endl;
-		Chunk::readYId(Chunk::readXId(reader, x), y);
-		cout <<"1.two x:" <<x << endl;*/
-		 if(mid <=0){
-                        offset = 0;
-                        return OK;
-                }
-                const uchar* tempoff = Chunk::readYId(Chunk::readXId(reader, x), y);
-                if(x>id ){
-                        offset = Chunk::skipBackward(reader-1) - beginPtr;
-                }else if(x == id){
-                        offset = reader - beginPtr;
-                }else{
-                        Chunk::readYId(Chunk::readXId(tempoff, x), y);
-                        if(x <= id)
-                                offset = tempoff- beginPtr;
-                        else
-                                offset = reader-beginPtr;
+		/*	const uchar* tempoff = Chunk::skipBackward(beginPtr + mid);
+			tempoff = Chunk::readYId(Chunk::readXId(reader, x), y);
+			cout <<"1.one x:" << x << endl;
+			Chunk::readYId(Chunk::readXId(reader, x), y);
+			cout <<"1.two x:" <<x << endl;*/
+		if (mid <= 0) {
+			offset = 0;
+			return OK;
+		}
+		const uchar *tempoff = Chunk::readYId(Chunk::readXId(reader, x), y);
+		if (x > id) {
+			offset = Chunk::skipBackward(reader - 1) - beginPtr;
+		} else if (x == id) {
+			offset = reader - beginPtr;
+		} else {
+			Chunk::readYId(Chunk::readXId(tempoff, x), y);
+			if (x <= id)
+				offset = tempoff - beginPtr;
+			else
+				offset = reader - beginPtr;
 
-                }
-                return OK;
+		}
+		return OK;
 	}
 
 	if (typeID == 2) {
@@ -485,7 +483,7 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 			lastmid = low;
 			//cout<<__FUNCTION__<<"x + y == id typeID == 2"<<endl;
 			while (low > 0) {
-			//	cout <<"1.x+y:" << x+y << endl;
+				//	cout <<"1.x+y:" << x+y << endl;
 				//x = 0;
 				//y = 0;
 				reader = Chunk::skipBackward(beginPtr + low);
@@ -514,15 +512,15 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 			lastmid = mid;
 			reader = Chunk::readXId(reader, x);
 			reader = Chunk::readYId(reader, y);
-			
+
 			if (x + y == id) {
-		//		cout <<"2.x+y:" << x+y << endl;
+				//		cout <<"2.x+y:" << x+y << endl;
 				lastmid = mid;
 				while (mid > 0) {
 					//x = y = 0;
 					reader = Chunk::skipBackward(beginPtr + mid);
 					Chunk::readYId(Chunk::readXId(reader, x), y);
-					if (reader < beginPtr ||x + y < id) {
+					if (reader < beginPtr || x + y < id) {
 						offset = lastmid;
 						return OK;
 					}
@@ -535,11 +533,11 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 			} else if (x + y > id) {
 				high = mid - 1;
 			} else {
-				low = mid +1;
+				low = mid + 1;
 			}
-	/*		if (lastmid == mid)
-                                break;
-                        lastmid = mid;*/
+			/*		if (lastmid == mid)
+										break;
+								lastmid = mid;*/
 
 		}
 /*		cout<<"low:"<<low <<"  mid:"<<mid <<"  high:" << high << endl;
@@ -551,22 +549,22 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 		if(x+y ==id){
 		   cout<<"lalalala" << endl;
 		}	 */
-		if(mid <=0){
+		if (mid <= 0) {
 			offset = 0;
 			return OK;
 		}
-		const uchar* tempoff = Chunk::readYId(Chunk::readXId(reader, x), y);
-		if(x+y >id ){
-			offset = Chunk::skipBackward(reader-1) - beginPtr;
-		}else if(x+y == id){
+		const uchar *tempoff = Chunk::readYId(Chunk::readXId(reader, x), y);
+		if (x + y > id) {
+			offset = Chunk::skipBackward(reader - 1) - beginPtr;
+		} else if (x + y == id) {
 			offset = reader - beginPtr;
-		}else{
+		} else {
 			Chunk::readYId(Chunk::readXId(tempoff, x), y);
-			if(x+y <= id)
-				offset = tempoff- beginPtr;
+			if (x + y <= id)
+				offset = tempoff - beginPtr;
 			else
-				offset = reader-beginPtr;
-			
+				offset = reader - beginPtr;
+
 		}
 		return OK;
 
@@ -580,37 +578,37 @@ Status LineHashIndex::getOffsetByID(ID id, unsigned& offset, unsigned typeID)
 	return OK;*/
 }
 
-void LineHashIndex::save(MMapBuffer*& indexBuffer)
-{
-	char* writeBuf;
+void LineHashIndex::save(MMapBuffer *&indexBuffer) {
+	char *writeBuf;
 
 	if (indexBuffer == NULL) {
-		indexBuffer = MMapBuffer::create(string(string(DATABASE_PATH) + "/BitmapBuffer_index").c_str(), tableSize * 4 * 2 + 4 + 16 * sizeof(double) + 4 * sizeof(ID));
+		indexBuffer = MMapBuffer::create(string(string(DATABASE_PATH) + "/BitmapBuffer_index").c_str(),
+		                                 tableSize * 4 * 2 + 4 + 16 * sizeof(double) + 4 * sizeof(ID));
 		writeBuf = indexBuffer->get_address();
 	} else {
 		size_t size = indexBuffer->getSize();
 		writeBuf = indexBuffer->resize(tableSize * 4 * 2 + 4 + 16 * sizeof(double) + 4 * sizeof(ID)) + size;
 	}
 
-	*(ID*) writeBuf = tableSize;
+	*(ID *) writeBuf = tableSize;
 	writeBuf = writeBuf + 4;
-	memcpy(writeBuf, (char*) idTableEntries, tableSize * 4);
+	memcpy(writeBuf, (char *) idTableEntries, tableSize * 4);
 	writeBuf = writeBuf + tableSize * 4;
-	memcpy(writeBuf, (char*) offsetTableEntries, tableSize * 4);
+	memcpy(writeBuf, (char *) offsetTableEntries, tableSize * 4);
 	writeBuf = writeBuf + tableSize * 4;
 
-	for(int i = 0; i < 4; i++) {
-		*(ID*)writeBuf = startID[i];
+	for (int i = 0; i < 4; i++) {
+		*(ID *) writeBuf = startID[i];
 		writeBuf = writeBuf + sizeof(ID);
 
-		*(double*)writeBuf = lowerk[i];
+		*(double *) writeBuf = lowerk[i];
 		writeBuf = writeBuf + sizeof(double);
-		*(double*)writeBuf = lowerb[i];
+		*(double *) writeBuf = lowerb[i];
 		writeBuf = writeBuf + sizeof(double);
 
-		*(double*)writeBuf = upperk[i];
+		*(double *) writeBuf = upperk[i];
 		writeBuf = writeBuf + sizeof(double);
-		*(double*)writeBuf = upperb[i];
+		*(double *) writeBuf = upperb[i];
 		writeBuf = writeBuf + sizeof(double);
 	}
 
@@ -621,29 +619,28 @@ void LineHashIndex::save(MMapBuffer*& indexBuffer)
 	offsetTable = NULL;
 }
 
-LineHashIndex* LineHashIndex::load(ChunkManager& manager, IndexType type, char* buffer, size_t& offset)
-{
-	LineHashIndex* index = new LineHashIndex(manager, type);
-	char* base = buffer + offset;
-	index->tableSize = *((ID*)base);
-	index->idTableEntries = (ID*)(base + 4);
-	index->offsetTableEntries = (ID*)(index->idTableEntries + index->tableSize);
+LineHashIndex *LineHashIndex::load(ChunkManager &manager, IndexType type, char *buffer, size_t &offset) {
+	LineHashIndex *index = new LineHashIndex(manager, type);
+	char *base = buffer + offset;
+	index->tableSize = *((ID *) base);
+	index->idTableEntries = (ID *) (base + 4);
+	index->offsetTableEntries = (ID *) (index->idTableEntries + index->tableSize);
 	offset = offset + 4 + 4 * 2 * index->tableSize;
 
 	base = buffer + offset;
-	for(int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		//base = buffer + offset;
-		index->startID[i] = *(ID*)base;
+		index->startID[i] = *(ID *) base;
 		base = base + sizeof(ID);
 
-		index->lowerk[i] = *(double*)base;
+		index->lowerk[i] = *(double *) base;
 		base = base + sizeof(double);
-		index->lowerb[i] = *(double*)base;
+		index->lowerb[i] = *(double *) base;
 		base = base + sizeof(double);
 
-		index->upperk[i] = *(double*)base;
+		index->upperk[i] = *(double *) base;
 		base = base + sizeof(double);
-		index->upperb[i] = *(double*)base;
+		index->upperb[i] = *(double *) base;
 		base = base + sizeof(double);
 	}
 

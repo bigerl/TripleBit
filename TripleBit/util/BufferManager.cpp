@@ -13,13 +13,12 @@
 #include "BufferManager.h"
 #include "../EntityIDBuffer.h"
 
-BufferManager* BufferManager::instance = NULL;
+BufferManager *BufferManager::instance = NULL;
 
-BufferManager::BufferManager()
-{
+BufferManager::BufferManager() {
 	// TODO Auto-generated constructor stub
 	for (int i = 0; i < INIT_BUFFERS; i++) {
-		EntityIDBuffer* buffer = new EntityIDBuffer;
+		EntityIDBuffer *buffer = new EntityIDBuffer;
 		bufferPool.push_back(buffer);
 		cleanBuffer.push_back(buffer);
 	}
@@ -27,15 +26,13 @@ BufferManager::BufferManager()
 	bufferCnt = INIT_BUFFERS;
 }
 
-BufferManager::~BufferManager()
-{
+BufferManager::~BufferManager() {
 	// TODO Auto-generated destructor stub
 }
 
-bool BufferManager::expandBuffer()
-{
+bool BufferManager::expandBuffer() {
 	for (int i = 0; i < INCREASE_BUFFERS; i++) {
-		EntityIDBuffer* buffer = new EntityIDBuffer;
+		EntityIDBuffer *buffer = new EntityIDBuffer;
 		if (buffer == NULL) {
 			bufferCnt += i;
 			return false;
@@ -48,21 +45,19 @@ bool BufferManager::expandBuffer()
 	return true;
 }
 
-EntityIDBuffer* BufferManager::getNewBuffer()
-{
+EntityIDBuffer *BufferManager::getNewBuffer() {
 	if (usedBuffer.size() == bufferPool.size()) {
 		if (expandBuffer() == false)
 			return NULL;
 	}
-	EntityIDBuffer* buffer = cleanBuffer.front();
+	EntityIDBuffer *buffer = cleanBuffer.front();
 	cleanBuffer.erase(cleanBuffer.begin());;
 	usedBuffer.push_back(buffer);
 
 	return buffer;
 }
 
-void BufferManager::destroyBuffers()
-{
+void BufferManager::destroyBuffers() {
 	for (size_t i = 0; i < bufferPool.size(); i++) {
 		delete bufferPool[i];
 	}
@@ -71,9 +66,8 @@ void BufferManager::destroyBuffers()
 	cleanBuffer.clear();
 }
 
-Status BufferManager::freeBuffer(EntityIDBuffer* buffer)
-{
-	vector<EntityIDBuffer*>::iterator iter;
+Status BufferManager::freeBuffer(EntityIDBuffer *buffer) {
+	vector<EntityIDBuffer *>::iterator iter;
 	iter = find(usedBuffer.begin(), usedBuffer.end(), buffer);
 	if (iter != usedBuffer.end()) {
 		usedBuffer.erase(iter);
@@ -85,8 +79,7 @@ Status BufferManager::freeBuffer(EntityIDBuffer* buffer)
 	}
 }
 
-Status BufferManager::reserveBuffer()
-{
+Status BufferManager::reserveBuffer() {
 	usedBuffer.clear();
 	cleanBuffer.clear();
 	int i;
@@ -95,20 +88,19 @@ Status BufferManager::reserveBuffer()
 		cleanBuffer.push_back(bufferPool[i]);
 	}
 
-	vector<EntityIDBuffer*>::iterator iter = bufferPool.begin() + i;
-	vector<EntityIDBuffer*>::iterator start = iter;
+	vector<EntityIDBuffer *>::iterator iter = bufferPool.begin() + i;
+	vector<EntityIDBuffer *>::iterator start = iter;
 	for (; iter != bufferPool.end(); iter++) {
 		delete *iter;
 		*iter = NULL;
 	}
-	bufferPool.erase(start,iter);
+	bufferPool.erase(start, iter);
 
 
 	return OK;
 }
 
-BufferManager* BufferManager::getInstance()
-{
+BufferManager *BufferManager::getInstance() {
 	if (instance == NULL) {
 		instance = new BufferManager;
 	}

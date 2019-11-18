@@ -22,11 +22,10 @@ RDFParser::~RDFParser() {
 }
 
 
-void RDFParser::parserRDFFile(string fileName, raptor_statement_handler handler, void* user_data)
-{
+void RDFParser::parserRDFFile(string fileName, raptor_statement_handler handler, void *user_data) {
 	raptor_parser *rdf_parser;
 	raptor_uri *uri, *base_uri;
-	unsigned char* uri_string;
+	unsigned char *uri_string;
 
 	raptor_init();
 	rdf_parser = raptor_new_parser("guess");

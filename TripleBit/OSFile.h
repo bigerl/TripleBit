@@ -18,10 +18,15 @@
 class OSFile {
 public:
 	OSFile();
+
 	virtual ~OSFile();
+
 	static bool fileExists(const string filename);
+
 	static bool directoryExists(const string dir);
+
 	static bool mkdir(const string dir);
+
 	static size_t fileSize(const string filename);
 };
 

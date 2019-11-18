@@ -15,10 +15,15 @@
 
 class MessageEngine {
 public:
-	enum MessageType { INFO = 1, WARNING, ERROR , DEFAULT};
+	enum MessageType {
+		INFO = 1, WARNING, ERROR, DEFAULT
+	};
+
 	MessageEngine();
+
 	virtual ~MessageEngine();
-	static void showMessage(char* msg, MessageType type = DEFAULT);
+
+	static void showMessage(char *msg, MessageType type = DEFAULT);
 };
 
 #endif /* MESSAGEENGINE_H_ */

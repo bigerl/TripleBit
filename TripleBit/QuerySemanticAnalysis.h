@@ -16,7 +16,9 @@
 #include "IRepository.h"
 
 class IRepository;
+
 class SPARQLParser;
+
 class TripleBitQueryGraph;
 
 ///Semantic Analysis for SPARQL query. Transform the parse result into a query Graph.
@@ -24,13 +26,14 @@ class QuerySemanticAnalysis {
 
 private:
 	///Repository use for String and URI lookup.
-	IRepository& repo;
+	IRepository &repo;
 public:
 	QuerySemanticAnalysis(IRepository &repo);
+
 	virtual ~QuerySemanticAnalysis();
 
 	/// Perform the transformation
-	bool transform(const SPARQLParser& input, TripleBitQueryGraph& output);
+	bool transform(const SPARQLParser &input, TripleBitQueryGraph &output);
 };
 
 #endif /* QUERYSEMANTICANALYSIS_H_ */

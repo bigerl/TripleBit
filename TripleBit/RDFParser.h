@@ -23,9 +23,12 @@ using namespace std;
 class RDFParser {
 public:
 	RDFParser();
-	static void parserRDFFile(string fileName, raptor_statement_handler hanler, void * user_data);
+
+	static void parserRDFFile(string fileName, raptor_statement_handler hanler, void *user_data);
+
 	//static void parseRdf(void* user_data, const raptor_statement* triple);
 	virtual ~RDFParser();
+
 private:
 	//std::string fileName;
 

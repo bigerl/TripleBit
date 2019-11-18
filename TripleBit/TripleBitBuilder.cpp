@@ -25,13 +25,12 @@
 #include <string.h>
 #include <pthread.h>
 
-static int getCharPos(const char* data, char ch)
-{
-	const char * p = data;
+static int getCharPos(const char *data, char ch) {
+	const char *p = data;
 	int i = 0;
-	while(*p != '\0'){
-		if( *p == ch)
-			return i+1;
+	while (*p != '\0') {
+		if (*p == ch)
+			return i + 1;
 		p++;
 		i++;
 	}
@@ -47,10 +46,14 @@ TripleBitBuilder::TripleBitBuilder(string _dir) : dir(_dir) {
 
 	statementFile.open(string(dir + "/statement.triple").c_str(), ios::out);
 
-	statBuffer[0] = new OneConstantStatisticsBuffer(string(dir + "/subject_statis"), StatisticsBuffer::SUBJECT_STATIS);			//subject statistics buffer;
-	statBuffer[1] = new OneConstantStatisticsBuffer(string(dir + "/object_statis"), StatisticsBuffer::OBJECT_STATIS);			//object statistics buffer;
-	statBuffer[2] = new TwoConstantStatisticsBuffer(string(dir + "/subjectpredicate_statis"), StatisticsBuffer::SUBJECTPREDICATE_STATIS);	//subject-predicate statistics buffer;
-	statBuffer[3] = new TwoConstantStatisticsBuffer(string(dir + "/objectpredicate_statis"), StatisticsBuffer::OBJECTPREDICATE_STATIS);	//object-predicate statistics buffer;
+	statBuffer[0] = new OneConstantStatisticsBuffer(string(dir + "/subject_statis"),
+	                                                StatisticsBuffer::SUBJECT_STATIS);            //subject statistics buffer;
+	statBuffer[1] = new OneConstantStatisticsBuffer(string(dir + "/object_statis"),
+	                                                StatisticsBuffer::OBJECT_STATIS);            //object statistics buffer;
+	statBuffer[2] = new TwoConstantStatisticsBuffer(string(dir + "/subjectpredicate_statis"),
+	                                                StatisticsBuffer::SUBJECTPREDICATE_STATIS);    //subject-predicate statistics buffer;
+	statBuffer[3] = new TwoConstantStatisticsBuffer(string(dir + "/objectpredicate_statis"),
+	                                                StatisticsBuffer::OBJECTPREDICATE_STATIS);    //object-predicate statistics buffer;
 
 	staReifTable = new StatementReificationTable();
 }
@@ -64,15 +67,15 @@ TripleBitBuilder::TripleBitBuilder() {
 
 TripleBitBuilder::~TripleBitBuilder() {
 	// TODO Auto-generated destructor stub
-	if( preTable != NULL ) 
+	if (preTable != NULL)
 		delete preTable;
 	preTable = NULL;
 
-	if( uriTable != NULL )
+	if (uriTable != NULL)
 		delete uriTable;
 	uriTable = NULL;
 	//delete uriStaBuffer;
-	if ( staReifTable != NULL )
+	if (staReifTable != NULL)
 		delete staReifTable;
 	staReifTable = NULL;
 
@@ -81,23 +84,23 @@ TripleBitBuilder::~TripleBitBuilder() {
 		bitmap = NULL;
 	}
 
-	for(int i = 0; i < 4; i++)
-	{
-		if(statBuffer[i] != NULL)
+	for (int i = 0; i < 4; i++) {
+		if (statBuffer[i] != NULL)
 			delete statBuffer[i];
 		statBuffer[i] = NULL;
 	}
 }
 
-bool TripleBitBuilder::isStatementReification(const char* object) {
+bool TripleBitBuilder::isStatementReification(const char *object) {
 	int pos;
 
-	const char* p;
+	const char *p;
 
 	if ((pos = getCharPos(object, '#')) != -1) {
 		p = object + pos;
 
-		if (strcmp(p, "Statement") == 0 || strcmp(p, "subject") == 0 || strcmp(p, "predicate") == 0 || strcmp(p, "object") == 0) {
+		if (strcmp(p, "Statement") == 0 || strcmp(p, "subject") == 0 || strcmp(p, "predicate") == 0 ||
+		    strcmp(p, "object") == 0) {
 			return true;
 		}
 	}
@@ -105,23 +108,21 @@ bool TripleBitBuilder::isStatementReification(const char* object) {
 	return false;
 }
 
-ID TripleBitBuilder::generateXY(ID& subjectID, ID& objectID)
-{
+ID TripleBitBuilder::generateXY(ID &subjectID, ID &objectID) {
 	ID temp;
 
-	if(subjectID > objectID)
-	{
+	if (subjectID > objectID) {
 		temp = subjectID;
 		subjectID = objectID;
 		objectID = temp - objectID;
 		return 1;
-	}else{
+	} else {
 		objectID = objectID - subjectID;
 		return 0;
 	}
 }
 
-void TripleBitBuilder::NTriplesParse(const char* subject,  const char* predicate, const char* object, TempFile& facts) {
+void TripleBitBuilder::NTriplesParse(const char *subject, const char *predicate, const char *object, TempFile &facts) {
 	ID subjectID, objectID, predicateID;
 
 	if (isStatementReification(object) == false && isStatementReification(predicate) == false) {
@@ -144,7 +145,7 @@ void TripleBitBuilder::NTriplesParse(const char* subject,  const char* predicate
 
 }
 
-bool TripleBitBuilder::N3Parse(istream& in, const char* name, TempFile& rawFacts) {
+bool TripleBitBuilder::N3Parse(istream &in, const char *name, TempFile &rawFacts) {
 	cerr << "Parsing " << name << "..." << endl;
 
 	TurtleParser parser(in);
@@ -154,27 +155,27 @@ bool TripleBitBuilder::N3Parse(istream& in, const char* name, TempFile& rawFacts
 			try {
 				if (!parser.parse(subject, predicate, object))
 					break;
-			} catch (const TurtleParser::Exception& e) {
+			} catch (const TurtleParser::Exception &e) {
 				while (in.get() != '\n');
 				continue;
 			}
 			//Construct IDs
 			//and write the triples
-			if(subject.length() && predicate.length() && object.length())
-				NTriplesParse((char*) subject.c_str(), (char*) predicate.c_str(), (char*) object.c_str(), rawFacts);
+			if (subject.length() && predicate.length() && object.length())
+				NTriplesParse((char *) subject.c_str(), (char *) predicate.c_str(), (char *) object.c_str(), rawFacts);
 
 		}
-	} catch (const TurtleParser::Exception&) {
+	} catch (const TurtleParser::Exception &) {
 		return false;
 	}
 	return true;
 }
 
-const char* TripleBitBuilder::skipIdIdId(const char* reader) {
+const char *TripleBitBuilder::skipIdIdId(const char *reader) {
 	return TempFile::skipId(TempFile::skipId(TempFile::skipId(reader)));
 }
 
-int TripleBitBuilder::compare213(const char* left, const char* right) {
+int TripleBitBuilder::compare213(const char *left, const char *right) {
 	ID l1, l2, l3, r1, r2, r3;
 	loadTriple(left, l1, l2, l3);
 	loadTriple(right, r1, r2, r3);
@@ -182,7 +183,7 @@ int TripleBitBuilder::compare213(const char* left, const char* right) {
 	return cmpTriples(l2, l1, l3, r2, r1, r3);
 }
 
-int TripleBitBuilder::compare231(const char* left, const char* right) {
+int TripleBitBuilder::compare231(const char *left, const char *right) {
 	ID l1, l2, l3, r1, r2, r3;
 	loadTriple(left, l1, l2, l3);
 	loadTriple(right, r1, r2, r3);
@@ -190,7 +191,7 @@ int TripleBitBuilder::compare231(const char* left, const char* right) {
 	return cmpTriples(l2, l3, l1, r2, r3, r1);
 }
 
-int TripleBitBuilder::compare123(const char* left, const char* right) {
+int TripleBitBuilder::compare123(const char *left, const char *right) {
 	ID l1, l2, l3, r1, r2, r3;
 	loadTriple(left, l1, l2, l3);
 	loadTriple(right, r1, r2, r3);
@@ -198,7 +199,7 @@ int TripleBitBuilder::compare123(const char* left, const char* right) {
 	return cmpTriples(l1, l2, l3, r1, r2, r3);
 }
 
-int TripleBitBuilder::compare321(const char* left, const char* right) {
+int TripleBitBuilder::compare321(const char *left, const char *right) {
 	ID l1, l2, l3, r1, r2, r3;
 	loadTriple(left, l1, l2, l3);
 	loadTriple(right, r1, r2, r3);
@@ -207,8 +208,8 @@ int TripleBitBuilder::compare321(const char* left, const char* right) {
 }
 
 
-Status TripleBitBuilder::resolveTriples(TempFile& rawFacts, TempFile& facts) {
-	cerr<<"Sort by Subject"<<endl;
+Status TripleBitBuilder::resolveTriples(TempFile &rawFacts, TempFile &facts) {
+	cerr << "Sort by Subject" << endl;
 	ID subjectID, objectID, predicateID;
 
 	ID lastSubject = 0, lastObject = 0, lastPredicate = 0;
@@ -220,39 +221,43 @@ Status TripleBitBuilder::resolveTriples(TempFile& rawFacts, TempFile& facts) {
 		sortedBySubject.close();
 		MemoryMappedFile mappedIn;
 		assert(mappedIn.open(sortedBySubject.getFile().c_str()));
-		const char* reader = mappedIn.getBegin(), *limit = mappedIn.getEnd();
+		const char *reader = mappedIn.getBegin(), *limit = mappedIn.getEnd();
 
 		loadTriple(reader, subjectID, predicateID, objectID);
-		lastSubject = subjectID; lastPredicate = predicateID; lastObject = objectID;
+		lastSubject = subjectID;
+		lastPredicate = predicateID;
+		lastObject = objectID;
 		reader = skipIdIdId(reader);
 		bool v = generateXY(subjectID, objectID);
 		bitmap->insertTriple(predicateID, subjectID, objectID, v, 0);
 		count0 = count1 = 1;
-		
+
 		while (reader < limit) {
 			loadTriple(reader, subjectID, predicateID, objectID);
-			if(lastSubject == subjectID && lastPredicate == predicateID && lastObject == objectID) {
+			if (lastSubject == subjectID && lastPredicate == predicateID && lastObject == objectID) {
 				reader = skipIdIdId(reader);
 				continue;
 			}
 
-			if ( subjectID != lastSubject ) {
-				((OneConstantStatisticsBuffer*)statBuffer[0])->addStatis(lastSubject, count0);
+			if (subjectID != lastSubject) {
+				((OneConstantStatisticsBuffer *) statBuffer[0])->addStatis(lastSubject, count0);
 				statBuffer[2]->addStatis(lastSubject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastSubject = subjectID;
 				lastObject = objectID;
 				count0 = count1 = 1;
-			} else if ( predicateID != lastPredicate ) {
+			} else if (predicateID != lastPredicate) {
 				statBuffer[2]->addStatis(lastSubject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastObject = objectID;
-				count0++; count1 = 1;
-			}else {
-				count0++; count1++;
+				count0++;
+				count1 = 1;
+			} else {
+				count0++;
+				count1++;
 				lastObject = objectID;
 			}
-			
+
 			reader = reader + 12;
 			v = generateXY(subjectID, objectID);
 			//0 indicate the triple is sorted by subjects' id;
@@ -262,8 +267,8 @@ Status TripleBitBuilder::resolveTriples(TempFile& rawFacts, TempFile& facts) {
 	}
 
 	bitmap->flush();
-	((OneConstantStatisticsBuffer*)statBuffer[0])->flush();
-	((TwoConstantStatisticsBuffer*)statBuffer[2])->flush();
+	((OneConstantStatisticsBuffer *) statBuffer[0])->flush();
+	((TwoConstantStatisticsBuffer *) statBuffer[2])->flush();
 
 	//sort
 	cerr << "Sort by Object" << endl;
@@ -273,10 +278,12 @@ Status TripleBitBuilder::resolveTriples(TempFile& rawFacts, TempFile& facts) {
 		sortedByObject.close();
 		MemoryMappedFile mappedIn;
 		assert(mappedIn.open(sortedByObject.getFile().c_str()));
-		const char* reader = mappedIn.getBegin(), *limit = mappedIn.getEnd();
+		const char *reader = mappedIn.getBegin(), *limit = mappedIn.getEnd();
 
 		loadTriple(reader, subjectID, predicateID, objectID);
-		lastSubject = subjectID; lastPredicate = predicateID; lastObject = objectID;
+		lastSubject = subjectID;
+		lastPredicate = predicateID;
+		lastObject = objectID;
 		reader = skipIdIdId(reader);
 		bool v = generateXY(objectID, subjectID);
 		bitmap->insertTriple(predicateID, objectID, subjectID, v, 1);
@@ -284,26 +291,28 @@ Status TripleBitBuilder::resolveTriples(TempFile& rawFacts, TempFile& facts) {
 
 		while (reader < limit) {
 			loadTriple(reader, subjectID, predicateID, objectID);
-			 if(lastSubject == subjectID && lastPredicate == predicateID && lastObject == objectID) {
+			if (lastSubject == subjectID && lastPredicate == predicateID && lastObject == objectID) {
 				reader = skipIdIdId(reader);
 				continue;
 			}
 
-			if ( objectID != lastObject ) {
-				((OneConstantStatisticsBuffer*)statBuffer[1])->addStatis(lastObject, count0);
+			if (objectID != lastObject) {
+				((OneConstantStatisticsBuffer *) statBuffer[1])->addStatis(lastObject, count0);
 				statBuffer[3]->addStatis(lastObject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastObject = objectID;
 				lastSubject = subjectID;
 				count0 = count1 = 1;
-			} else if ( predicateID != lastPredicate ) {
+			} else if (predicateID != lastPredicate) {
 				statBuffer[3]->addStatis(lastObject, lastPredicate, count1);
 				lastPredicate = predicateID;
 				lastSubject = subjectID;
-				count0++; count1 = 1;
+				count0++;
+				count1 = 1;
 			} else {
 				lastSubject = subjectID;
-				count0++; count1++;
+				count0++;
+				count1++;
 			}
 			reader = skipIdIdId(reader);
 			v = generateXY(objectID, subjectID);
@@ -314,8 +323,8 @@ Status TripleBitBuilder::resolveTriples(TempFile& rawFacts, TempFile& facts) {
 	}
 
 	bitmap->flush();
-	((OneConstantStatisticsBuffer*)statBuffer[1])->flush();
-	((TwoConstantStatisticsBuffer*)statBuffer[3])->flush();
+	((OneConstantStatisticsBuffer *) statBuffer[1])->flush();
+	((TwoConstantStatisticsBuffer *) statBuffer[3])->flush();
 	rawFacts.discard();
 	sortedByObject.discard();
 	sortedBySubject.discard();
@@ -326,7 +335,7 @@ Status TripleBitBuilder::resolveTriples(TempFile& rawFacts, TempFile& facts) {
 Status TripleBitBuilder::startBuildN3(string fileName) {
 	TempFile rawFacts("./test");
 
-	ifstream in((char*) fileName.c_str());
+	ifstream in((char *) fileName.c_str());
 	if (!in.is_open()) {
 		cerr << "Unable to open " << fileName << endl;
 		return ERROR;
@@ -345,7 +354,7 @@ Status TripleBitBuilder::startBuildN3(string fileName) {
 	staReifTable = NULL;
 
 	rawFacts.flush();
-	cerr<<"over"<<endl;
+	cerr << "over" << endl;
 
 	//sort by s,o
 	TempFile facts(fileName);
@@ -356,19 +365,21 @@ Status TripleBitBuilder::startBuildN3(string fileName) {
 
 Status TripleBitBuilder::buildIndex() {
 	// build hash index;
-	MMapBuffer* bitmapIndex;
-	cout<<"build hash index for subject"<<endl;
-	for ( map<ID,ChunkManager*>::iterator iter = bitmap->predicate_managers[0].begin(); iter != bitmap->predicate_managers[0].end(); iter++ ) {
-		if ( iter->second != NULL ) {
+	MMapBuffer *bitmapIndex;
+	cout << "build hash index for subject" << endl;
+	for (map<ID, ChunkManager *>::iterator iter = bitmap->predicate_managers[0].begin();
+	     iter != bitmap->predicate_managers[0].end(); iter++) {
+		if (iter->second != NULL) {
 			iter->second->buildChunkIndex();
 			iter->second->getChunkIndex(1)->save(bitmapIndex);
 			iter->second->getChunkIndex(2)->save(bitmapIndex);
 		}
 	}
 
-	cout<<"build hash index for object"<<endl;
-	for ( map<ID, ChunkManager*>::iterator iter = bitmap->predicate_managers[1].begin(); iter != bitmap->predicate_managers[1].end(); iter++ ) {
-		if ( iter->second != NULL ) {
+	cout << "build hash index for object" << endl;
+	for (map<ID, ChunkManager *>::iterator iter = bitmap->predicate_managers[1].begin();
+	     iter != bitmap->predicate_managers[1].end(); iter++) {
+		if (iter->second != NULL) {
 			iter->second->buildChunkIndex();
 			iter->second->getChunkIndex(1)->save(bitmapIndex);
 			iter->second->getChunkIndex(2)->save(bitmapIndex);
@@ -385,11 +396,11 @@ Status TripleBitBuilder::endBuild() {
 	bitmap->save();
 
 	ofstream ofile(string(dir + "/statIndex").c_str());
-	MMapBuffer* indexBuffer = NULL;
-	((OneConstantStatisticsBuffer*)statBuffer[0])->save(indexBuffer);
-	((OneConstantStatisticsBuffer*)statBuffer[1])->save(indexBuffer);
-	((TwoConstantStatisticsBuffer*)statBuffer[2])->save(indexBuffer);
-	((TwoConstantStatisticsBuffer*)statBuffer[3])->save(indexBuffer);
+	MMapBuffer *indexBuffer = NULL;
+	((OneConstantStatisticsBuffer *) statBuffer[0])->save(indexBuffer);
+	((OneConstantStatisticsBuffer *) statBuffer[1])->save(indexBuffer);
+	((TwoConstantStatisticsBuffer *) statBuffer[2])->save(indexBuffer);
+	((TwoConstantStatisticsBuffer *) statBuffer[3])->save(indexBuffer);
 
 	delete indexBuffer;
 	return OK;

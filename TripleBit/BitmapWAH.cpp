@@ -20,8 +20,7 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-BitmapWAH::BitmapWAH()
-{
+BitmapWAH::BitmapWAH() {
 //	bitMap = (BitMapType*)malloc(sizeof(BitMapType) * BITMAP_INITIAL_SIZE);
 	/*bitMap = Alloc::allocate(BITMAP_INITIAL_SIZE);
 	bitMapSize = 0;
@@ -34,8 +33,7 @@ BitmapWAH::BitmapWAH()
 	bitMapSize = 0;
 }
 
-BitmapWAH::~BitmapWAH()
-{
+BitmapWAH::~BitmapWAH() {
 	//unsigned int size;
 	/*unsigned int i;
 	for( i = 0; i < bitMapSize; i++)
@@ -47,10 +45,9 @@ BitmapWAH::~BitmapWAH()
 
 	free(bitMap);*/
 
-	cout<<"destroy bitmap"<<endl;
-	map<ID,BitMapType>::iterator iter = bitMap.begin();
-	for(;iter != bitMap.end();iter++)
-	{
+	cout << "destroy bitmap" << endl;
+	map<ID, BitMapType>::iterator iter = bitMap.begin();
+	for (; iter != bitMap.end(); iter++) {
 		delete iter->second;
 	}
 }
@@ -58,8 +55,7 @@ BitmapWAH::~BitmapWAH()
 /************************************************************************/
 /*                                                                      */
 /************************************************************************/
-void BitmapWAH::insert(ID id, unsigned int pos)
-{
+void BitmapWAH::insert(ID id, unsigned int pos) {
 	/*if(id < 0)
 		return;
 	if(id <= capacity){
@@ -81,19 +77,17 @@ void BitmapWAH::insert(ID id, unsigned int pos)
 
 		cout<<bitMapSize<<endl;
 	}*/
-	if(isIdInBitmap(id) == true)
-	{
+	if (isIdInBitmap(id) == true) {
 		bitMap[id]->set(pos);
-	}else{
-		BitVectorWAH* pBitVec = new BitVectorWAH;
+	} else {
+		BitVectorWAH *pBitVec = new BitVectorWAH;
 		bitMap[id] = pBitVec;
 		bitMap[id]->set(pos);
 		bitMapSize++;
 	}
 }
 
-void BitmapWAH::expandBitmap()
-{
+void BitmapWAH::expandBitmap() {
 	/*bitMap = (BitMapType*)realloc(bitMap, BITMAP_INCREASE_SIZE * sizeof(BitVector*));
 	int i = 0;
 	//for(i = 0; i<BITMAP_INCREASE_SIZE;i++)
@@ -104,29 +98,26 @@ void BitmapWAH::expandBitmap()
 	capacity += BITMAP_INCREASE_SIZE;*/
 }
 
-bool BitmapWAH::isIdInBitmap(ID id)
-{
+bool BitmapWAH::isIdInBitmap(ID id) {
 	/*if(id > 0 && id <= bitMapSize)
 		return true;
 	else
 		return false;*/
 
-	map<ID,BitMapType>::iterator iter = bitMap.find(id);
-	if(iter == bitMap.end())
+	map<ID, BitMapType>::iterator iter = bitMap.find(id);
+	if (iter == bitMap.end())
 		return false;
 	else
 		return true;
 }
 
-size_t BitmapWAH::get_size()
-{
+size_t BitmapWAH::get_size() {
 	size_t size = 0;
 
-	map<ID,BitMapType>::iterator iter = bitMap.begin();
+	map<ID, BitMapType>::iterator iter = bitMap.begin();
 
-	for(;iter != bitMap.end();iter++)
-	{
-		size+=(iter->second)->getSize();
+	for (; iter != bitMap.end(); iter++) {
+		size += (iter->second)->getSize();
 	}
 	return size;
 }
@@ -135,14 +126,12 @@ size_t BitmapWAH::get_size()
 /*********************************************************************/
 /*                                                                      */
 /************************************************************************/
-void BitmapWAH::print()
-{
-	cout<<"the bit map size is "<<get_size()<<endl;
+void BitmapWAH::print() {
+	cout << "the bit map size is " << get_size() << endl;
 
 }
 
-void BitmapWAH::completeInsert()
-{
+void BitmapWAH::completeInsert() {
 	/*int i;
 	for(i = 0; i< bitMapSize; i++)
 	{
@@ -150,10 +139,9 @@ void BitmapWAH::completeInsert()
 			bitMap[i]->completeInsert();
 	}*/
 
-	map<ID,BitMapType>::iterator iter = bitMap.begin();
+	map<ID, BitMapType>::iterator iter = bitMap.begin();
 
-	for(;iter != bitMap.end(); iter++)
-	{
+	for (; iter != bitMap.end(); iter++) {
 		(iter->second)->completeInsert();
 	}
 }

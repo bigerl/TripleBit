@@ -18,7 +18,7 @@
 
 using namespace std;
 
-void CTask::SetData(void * data) {
+void CTask::SetData(void *data) {
 	m_ptrData = data;
 }
 
@@ -26,22 +26,21 @@ void CTask::SetData(void * data) {
 //////////////////////////////////////////////////////////////////////
 ////// class CThreadPool
 //////////////////////////////////////////////////////////////////////
-CThreadPool* CThreadPool::instance = NULL;
+CThreadPool *CThreadPool::instance = NULL;
 
 CThreadPool::CThreadPool(int threadNum) {
 	this->m_iThreadNum = threadNum;
-	pthread_mutex_init(&m_pthreadMutex,NULL);
-	pthread_mutex_init(&m_pthreadIdleMutex,NULL);
-	pthread_mutex_init(&m_pthreadBusyMutex,NULL);
-	pthread_cond_init(&m_pthreadCond,NULL);
-	pthread_cond_init(&m_pthreadEmpty,NULL);
-	pthread_cond_init(&m_pthreadBusyEmpty,NULL);
+	pthread_mutex_init(&m_pthreadMutex, NULL);
+	pthread_mutex_init(&m_pthreadIdleMutex, NULL);
+	pthread_mutex_init(&m_pthreadBusyMutex, NULL);
+	pthread_cond_init(&m_pthreadCond, NULL);
+	pthread_cond_init(&m_pthreadEmpty, NULL);
+	pthread_cond_init(&m_pthreadBusyEmpty, NULL);
 	shutdown = false;
 	Create();
 }
 
-CThreadPool::~CThreadPool()
-{
+CThreadPool::~CThreadPool() {
 	this->StopAll();
 	pthread_mutex_destroy(&m_pthreadMutex);
 	pthread_mutex_destroy(&m_pthreadIdleMutex);
@@ -62,7 +61,7 @@ int CThreadPool::MoveToIdle(pthread_t tid) {
 	}
 	m_vecBusyThread.erase(busyIter);
 
-	if ( m_vecBusyThread.size() == 0) {
+	if (m_vecBusyThread.size() == 0) {
 		pthread_cond_broadcast(&m_pthreadBusyEmpty);
 	}
 
@@ -92,23 +91,23 @@ int CThreadPool::MoveToBusy(pthread_t tid) {
 	return 0;
 }
 
-void* CThreadPool::ThreadFunc(void * threadData) {
+void *CThreadPool::ThreadFunc(void *threadData) {
 	pthread_t tid = pthread_self();
 	int rnt;
-	ThreadPoolArg* arg = (ThreadPoolArg*)threadData;
-	vector<Task>* taskList = arg->taskList;
-	CThreadPool* pool = arg->pool;
+	ThreadPoolArg *arg = (ThreadPoolArg *) threadData;
+	vector<Task> *taskList = arg->taskList;
+	CThreadPool *pool = arg->pool;
 	while (1) {
 		rnt = pthread_mutex_lock(&pool->m_pthreadMutex);
-		if ( rnt != 0){
-			cout<<"Get mutex error"<<endl;
+		if (rnt != 0) {
+			cout << "Get mutex error" << endl;
 		}
 
-		while( taskList->size() == 0 && pool->shutdown == false){
+		while (taskList->size() == 0 && pool->shutdown == false) {
 			pthread_cond_wait(&pool->m_pthreadCond, &pool->m_pthreadMutex);
 		}
 
-		if ( pool->shutdown == true){
+		if (pool->shutdown == true) {
 			pthread_mutex_unlock(&pool->m_pthreadMutex);
 			pthread_exit(NULL);
 		}
@@ -117,17 +116,17 @@ void* CThreadPool::ThreadFunc(void * threadData) {
 		Task task = Task(taskList->front());
 		taskList->erase(taskList->begin());
 
-		if ( taskList->size() == 0 ) {
+		if (taskList->size() == 0) {
 			pthread_cond_broadcast(&pool->m_pthreadEmpty);
 		}
 		pthread_mutex_unlock(&pool->m_pthreadMutex);
 		task();
 		pool->MoveToIdle(tid);
 	}
-	return (void*) 0;
+	return (void *) 0;
 }
 
-int CThreadPool::AddTask(const Task& task) {
+int CThreadPool::AddTask(const Task &task) {
 	pthread_mutex_lock(&m_pthreadMutex);
 	this->m_vecTaskList.push_back(task);
 	pthread_mutex_unlock(&m_pthreadMutex);
@@ -137,7 +136,7 @@ int CThreadPool::AddTask(const Task& task) {
 
 int CThreadPool::Create() {
 	m_vecTaskList.clear();
-	struct ThreadPoolArg* arg = new ThreadPoolArg;
+	struct ThreadPoolArg *arg = new ThreadPoolArg;
 	pthread_mutex_lock(&m_pthreadIdleMutex);
 	for (int i = 0; i < m_iThreadNum; i++) {
 		pthread_t tid = 0;
@@ -159,7 +158,7 @@ int CThreadPool::StopAll() {
 		pthread_join(*iter, NULL);
 		iter++;
 	}
-	
+
 	iter = m_vecBusyThread.begin();
 	while (iter != m_vecBusyThread.end()) {
 		pthread_join(*iter, NULL);
@@ -169,26 +168,24 @@ int CThreadPool::StopAll() {
 	return 0;
 }
 
-int CThreadPool::Wait()
-{
+int CThreadPool::Wait() {
 	int rnt;
 
 	rnt = pthread_mutex_lock(&m_pthreadMutex);
-	while( m_vecTaskList.size() != 0 ) {
+	while (m_vecTaskList.size() != 0) {
 		pthread_cond_wait(&m_pthreadEmpty, &m_pthreadMutex);
 	}
 	rnt = pthread_mutex_unlock(&m_pthreadMutex);
 	pthread_mutex_lock(&m_pthreadBusyMutex);
-	while( m_vecBusyThread.size() != 0) {
+	while (m_vecBusyThread.size() != 0) {
 		pthread_cond_wait(&m_pthreadBusyEmpty, &m_pthreadBusyMutex);
 	}
 	pthread_mutex_unlock(&m_pthreadBusyMutex);
 	return 0;
 }
 
-CThreadPool& CThreadPool::getInstance()
-{
-	if(instance == NULL) {
+CThreadPool &CThreadPool::getInstance() {
+	if (instance == NULL) {
 		instance = new CThreadPool(THREAD_NUMBER);
 	}
 	return *instance;

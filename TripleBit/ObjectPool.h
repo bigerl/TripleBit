@@ -28,9 +28,9 @@ enum BufferType {
 const int BufferTypeMask = 1;
 
 enum LengthType {
-	LengthType_UChar  = 0,
+	LengthType_UChar = 0,
 	LengthType_UShort = 2,
-	LengthType_UInt   = 4,
+	LengthType_UInt = 4,
 	LengthType_ULongLong = 6
 };
 
@@ -38,12 +38,12 @@ const int LengthTypeMask = 6;
 
 enum ObjectPoolType {
 	ObjectPoolType_Normal = 1 << 4,
-	ObjectPoolType_Fixed  = 2 << 4,
+	ObjectPoolType_Fixed = 2 << 4,
 };
 
 const int ObjectPoolTypeMask = 0xF0;
 
-struct ObjectPoolMeta { 
+struct ObjectPoolMeta {
 	ulonglong type; //
 	ulonglong size; //the total size
 	ulonglong usage;
@@ -58,26 +58,26 @@ struct ObjectPoolMeta {
  * Object pool used to stored the ID-string table;
  * Storage format: ID-string-'\0'
  */
-template < typename LengthType >
+template<typename LengthType>
 class ObjectPool {
 private:
-	MMapBuffer * data;
+	MMapBuffer *data;
 
-	ObjectPool():data(0){}
+	ObjectPool() : data(0) {}
 
-	ObjectPoolMeta * get_meta(){
-		return (ObjectPoolMeta*)(data->get_address());
+	ObjectPoolMeta *get_meta() {
+		return (ObjectPoolMeta *) (data->get_address());
 	}
 
 public:
-	virtual ~ObjectPool(){
+	virtual ~ObjectPool() {
 		delete data;
 	};
-	
-	virtual void flush(){
+
+	virtual void flush() {
 	}
 
-	virtual ulonglong size(){
+	virtual ulonglong size() {
 		return get_meta()->size;
 	}
 
@@ -85,9 +85,9 @@ public:
 		return get_meta()->usage;
 	}
 
-	virtual Status optimaze(){
+	virtual Status optimaze() {
 		Status retcode = data->resize(get_meta()->usage, false);
-		if(retcode!=OK){
+		if (retcode != OK) {
 			printf("optimaze error\n");
 			return retcode;
 		}
@@ -95,41 +95,41 @@ public:
 		return OK;
 	}
 
-	virtual void clear(){
-		ObjectPoolMeta * meta = get_meta();
+	virtual void clear() {
+		ObjectPoolMeta *meta = get_meta();
 		meta->size = 0;
 		meta->usage = sizeof(ObjectPoolMeta);
 		flush();
 	}
 
-	virtual void reserve(OffsetType size){
-		if( size > data->get_length() ){
+	virtual void reserve(OffsetType size) {
+		if (size > data->get_length()) {
 			Status ret = data->resize(size, false);
-			if(ret!=OK)
+			if (ret != OK)
 				return;
-			ObjectPoolMeta * header = get_meta();
+			ObjectPoolMeta *header = get_meta();
 			header->length = size;
 		}
 	}
 
-	virtual OffsetType first_offset(){
-		if(get_meta()->size>0){
+	virtual OffsetType first_offset() {
+		if (get_meta()->size > 0) {
 			OffsetType ret = sizeof(ObjectPoolMeta);
-			if( *(ID*)(data->get_address()+ret) == INVALID_ID )
+			if (*(ID *) (data->get_address() + ret) == INVALID_ID)
 				return next_offset(ret);
 			return ret;
-		}else
+		} else
 			return 0;
 	}
 
 	/*
 	 * return the the offset of next object which start from 'offset'.
 	 */
-	virtual OffsetType next_offset(OffsetType offset){
+	virtual OffsetType next_offset(OffsetType offset) {
 #ifndef USE_C_STRING
 		OffsetType ret = offset + *((LengthType*)(data->get_address()+offset)) + sizeof(LengthType);
 #else
-		OffsetType ret = offset + sizeof(ID) + strlen((char*)data->get_address() + offset + sizeof(ID)) + 1;
+		OffsetType ret = offset + sizeof(ID) + strlen((char *) data->get_address() + offset + sizeof(ID)) + 1;
 #endif
 		/*
 		while(  *(ID*)(data->get_address()+ret+sizeof(LengthType)) == INVALID_ID ){
@@ -144,11 +144,11 @@ public:
 				return 0;
 		}
 		*/
-		if(*(ID*)(data->get_address() + ret) == INVALID_ID) {
+		if (*(ID *) (data->get_address() + ret) == INVALID_ID) {
 			return 0;
 		}
 
-		if( ret >= get_meta()->usage)
+		if (ret >= get_meta()->usage)
 			return 0;
 		else
 			return ret;
@@ -158,13 +158,13 @@ public:
 	 * *plength is the ID + lengthof(ppdata)
 	 * *ppdata is the really data pointer;
 	 */
-	virtual Status get_by_offset(OffsetType offset, OffsetType * plength, void **ppdata){
+	virtual Status get_by_offset(OffsetType offset, OffsetType *plength, void **ppdata) {
 #ifdef USE_C_STRING
 		OffsetType usage = get_meta()->usage;
-		assert( offset < usage );
+		assert(offset < usage);
 
-		*ppdata = data->get_address()+offset + sizeof(ID);
-		*plength = sizeof(ID) + strlen((char*)(*ppdata));
+		*ppdata = data->get_address() + offset + sizeof(ID);
+		*plength = sizeof(ID) + strlen((char *) (*ppdata));
 #else
 		OffsetType usage = get_meta()->usage;
 		assert( offset < usage);
@@ -176,7 +176,7 @@ public:
 		// TODO:
 	}
 
-	virtual Status get_by_offset(OffsetType offset, void** ppdata) {
+	virtual Status get_by_offset(OffsetType offset, void **ppdata) {
 		OffsetType usage = get_meta()->usage;
 		assert(offset < usage);
 
@@ -185,32 +185,32 @@ public:
 	}
 
 	//
-	OffsetType append_object_with_id( ID id, OffsetType length, const void * pdata){
+	OffsetType append_object_with_id(ID id, OffsetType length, const void *pdata) {
 #ifdef USE_C_STRING
-		OffsetType alllength = length+sizeof(ID) + 1; //c type string;
+		OffsetType alllength = length + sizeof(ID) + 1; //c type string;
 #else
 		OffsetType alllength = length + sizeof(ID);
 #endif
-		assert ( alllength < (LengthType(-1)));
+		assert (alllength < (LengthType(-1)));
 
 		// TODO: check length
-		ObjectPoolMeta * header = get_meta();
-		if( header->usage + alllength > header->length ){
+		ObjectPoolMeta *header = get_meta();
+		if (header->usage + alllength > header->length) {
 #ifdef USE_C_STRING
-			OffsetType new_length = expand(header->length,alllength,header->classtype);
+			OffsetType new_length = expand(header->length, alllength, header->classtype);
 #else
 			OffsetType new_length = expand(header->length, alllength + sizeof(LengthType), header->classtype);
 #endif
 			Status ret = data->resize(new_length, false);
-			if(ret!=OK)
+			if (ret != OK)
 				return 0;
 			header = get_meta();
 			header->length = new_length;
 		}
-		char * top = data->get_address() + header->usage;
+		char *top = data->get_address() + header->usage;
 
 #ifdef USE_C_STRING
-		*(ID*)top = id;
+		*(ID *) top = id;
 		memcpy(top + sizeof(ID), pdata, length);
 		*(top + sizeof(ID) + length) = '\0';
 		OffsetType ret = header->usage;
@@ -228,29 +228,28 @@ public:
 		return ret;
 	}
 
-	void dump_int_string(FILE * out)
-	{
+	void dump_int_string(FILE *out) {
 		OffsetType off = first_offset();
-		while(off){
-			void * pdata;
+		while (off) {
+			void *pdata;
 			OffsetType length;
-			get_by_offset(off,&length,&pdata);
-			fprintf(out,"%u [",*(ID*)((char*)pdata - sizeof(ID)));
-			LengthString((char*)pdata).dump(out);
+			get_by_offset(off, &length, &pdata);
+			fprintf(out, "%u [", *(ID *) ((char *) pdata - sizeof(ID)));
+			LengthString((char *) pdata).dump(out);
 			fprintf(out, "]\n");
 			off = next_offset(off);
 		}
 	}
 
-	static ObjectPool * create(int type,const char * name,ID init_capacity){
-		ObjectPool * ret = new ObjectPool();
-		ret->data = new MMapBuffer(name, sizeof(ObjectPoolMeta)+init_capacity);
-		if(ret->data == NULL){
+	static ObjectPool *create(int type, const char *name, ID init_capacity) {
+		ObjectPool *ret = new ObjectPool();
+		ret->data = new MMapBuffer(name, sizeof(ObjectPoolMeta) + init_capacity);
+		if (ret->data == NULL) {
 			delete ret;
 			return NULL;
 		}
-		ObjectPoolMeta * meta = ret->get_meta();
-		memset(meta,0,sizeof(ObjectPoolMeta));
+		ObjectPoolMeta *meta = ret->get_meta();
+		memset(meta, 0, sizeof(ObjectPoolMeta));
 		meta->entrysize = 0;
 		meta->length = ret->data->get_length();
 		meta->usage = sizeof(ObjectPoolMeta);
@@ -259,10 +258,10 @@ public:
 		return ret;
 	}
 
-	static ObjectPool * load(const char * name){
-		ObjectPool * ret = new ObjectPool();
+	static ObjectPool *load(const char *name) {
+		ObjectPool *ret = new ObjectPool();
 		ret->data = MMapBuffer::create(name, 0);
-		if(ret->data == NULL){
+		if (ret->data == NULL) {
 			delete ret;
 			return NULL;
 		}
@@ -272,15 +271,16 @@ public:
 
 class FixedObjectPool {
 protected:
-	MMapBuffer * data;
-	FixedObjectPool():data(0){}
+	MMapBuffer *data;
 
-	ObjectPoolMeta * get_meta(){
-		return (ObjectPoolMeta*)(data->get_address());
+	FixedObjectPool() : data(0) {}
+
+	ObjectPoolMeta *get_meta() {
+		return (ObjectPoolMeta *) (data->get_address());
 	}
 
 public:
-	virtual ~FixedObjectPool(){
+	virtual ~FixedObjectPool() {
 		delete data;
 	}
 
@@ -294,9 +294,9 @@ public:
 		return get_meta()->usage;
 	}
 
-	virtual Status optimaze(){
+	virtual Status optimaze() {
 		Status retcode = data->resize(get_meta()->usage, false);
-		if(retcode!=OK){
+		if (retcode != OK) {
 			printf("optimaze error\n");
 			return retcode;
 		}
@@ -304,13 +304,13 @@ public:
 		return OK;
 	}
 
-	virtual void reserve(OffsetType size){
-		if( size*get_meta()->entrysize > data->get_length() ){
-			Status ret = data->resize(size*get_meta()->entrysize, false);
-			if(ret!=OK)
+	virtual void reserve(OffsetType size) {
+		if (size * get_meta()->entrysize > data->get_length()) {
+			Status ret = data->resize(size * get_meta()->entrysize, false);
+			if (ret != OK)
 				return;
-			ObjectPoolMeta * header = get_meta();
-			header->length = size*header->entrysize;
+			ObjectPoolMeta *header = get_meta();
+			header->length = size * header->entrysize;
 		}
 	}
 
@@ -318,21 +318,20 @@ public:
 
 	virtual OffsetType next_offset(OffsetType offset);
 
-	virtual Status get_by_offset(OffsetType offset, OffsetType * plength, void **ppdata);
+	virtual Status get_by_offset(OffsetType offset, OffsetType *plength, void **ppdata);
 
 	// id look up
-	virtual Status get_by_id(ID id, OffsetType * plength, void **ppdata);
+	virtual Status get_by_id(ID id, OffsetType *plength, void **ppdata);
 
-	ID append_object_get_id(const void * data);
+	ID append_object_get_id(const void *data);
 
-	ID next_id(){
-		ObjectPoolMeta * meta = get_meta();
+	ID next_id() {
+		ObjectPoolMeta *meta = get_meta();
 		return meta->size + meta->id_offset;
 	}
 
-	void dump_int_string(FILE * out)
-	{
-		fprintf(out,"size: %u\n",size());
+	void dump_int_string(FILE *out) {
+		fprintf(out, "size: %u\n", size());
 		/*
 		OffsetType off = first_offset();
 		while(off){
@@ -346,11 +345,11 @@ public:
 		}*/
 	}
 
-	bool initialize(int type,const char * name,ID init_capacity,OffsetType entrysize);
+	bool initialize(int type, const char *name, ID init_capacity, OffsetType entrysize);
 
-	static FixedObjectPool * create(int type,const char * name,ID init_capacity,OffsetType entrysize);
+	static FixedObjectPool *create(int type, const char *name, ID init_capacity, OffsetType entrysize);
 
-	static FixedObjectPool * load(const char * name);
+	static FixedObjectPool *load(const char *name);
 };
 
 #endif /* OBJECTPOOL_H_ */

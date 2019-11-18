@@ -16,8 +16,7 @@
 
 ID URITable::startID = 1;
 
-ID URITable::getMaxID()
-{
+ID URITable::getMaxID() {
 	return startID;
 }
 
@@ -40,17 +39,16 @@ URITable::~URITable() {
 #ifdef DEBUG
 	cout<<"destroy URITable"<<endl;
 #endif
-	if(prefix_segment != NULL)
+	if (prefix_segment != NULL)
 		delete prefix_segment;
 	prefix_segment = NULL;
 
-	if(suffix_segment != NULL)
+	if (suffix_segment != NULL)
 		delete suffix_segment;
 	suffix_segment = NULL;
 }
 
-Status URITable::getIdByURI(const char* URI,ID& id)
-{
+Status URITable::getIdByURI(const char *URI, ID &id) {
 	getPrefix(URI);
 	if (prefix.equals(SINGLE.c_str())) {
 		searchStr.clear();
@@ -87,8 +85,7 @@ Status URITable::getIdByURI(const char* URI,ID& id)
 	return URI_FOUND;
 }
 
-Status URITable::getPrefix(const char* URI)
-{
+Status URITable::getPrefix(const char *URI) {
 	size_t size = strlen(URI);
 	int i;
 	for (i = size - 2; i >= 0; i--) {
@@ -111,19 +108,18 @@ Status URITable::getPrefix(const char* URI)
 	return OK;
 }
 
-Status URITable::insertTable(const char* URI, ID& id)
-{
+Status URITable::insertTable(const char *URI, ID &id) {
 	getPrefix(URI);
 	char temp[20];
 	ID prefixId;
 
 	prefixId = 1;
-	if(prefix_segment->findIdByString(prefixId, &prefix) == false)
+	if (prefix_segment->findIdByString(prefixId, &prefix) == false)
 		prefixId = prefix_segment->addStringToSegment(&prefix);
-	sprintf(temp, "%d",prefixId);
+	sprintf(temp, "%d", prefixId);
 
 	searchStr.assign(suffix.str, suffix.length);
-	for(size_t i = 0; i < strlen(temp); i++) {
+	for (size_t i = 0; i < strlen(temp); i++) {
 #ifdef USE_C_STRING
 		searchStr.insert(searchStr.begin() + i, temp[i] - '0' + 1);//suffix.insert(suffix.begin() + i, temp[i] - '0');
 #else
@@ -131,20 +127,20 @@ Status URITable::insertTable(const char* URI, ID& id)
 #endif
 	}
 
-	searchLen.str = searchStr.c_str(); searchLen.length = searchStr.length();
+	searchLen.str = searchStr.c_str();
+	searchLen.length = searchStr.length();
 	id = suffix_segment->addStringToSegment(&searchLen);
 	searchStr.clear();
 	return OK;
 }
 
-Status URITable::getURIById(string& URI, ID id)
-{
+Status URITable::getURIById(string &URI, ID id) {
 	URI.clear();
 	if (suffix_segment->findStringById(&suffix, id) == false)
 		return URI_NOT_FOUND;
 	char temp[10];
 	memset(temp, 0, 10);
-	const char* ptr = suffix.str;
+	const char *ptr = suffix.str;
 
 	int i;
 #ifdef USE_C_STRING
@@ -175,16 +171,14 @@ Status URITable::getURIById(string& URI, ID id)
 	return OK;
 }
 
-URITable* URITable::load(const string dir)
-{
-	URITable* uriTable = new URITable();
+URITable *URITable::load(const string dir) {
+	URITable *uriTable = new URITable();
 	uriTable->prefix_segment = StringIDSegment::load(dir, "/uri_prefix");
 	uriTable->suffix_segment = StringIDSegment::load(dir, "/uri_suffix");
 	return uriTable;
 }
 
-void URITable::dump()
-{
+void URITable::dump() {
 	prefix_segment->dump();
 	suffix_segment->dump();
 }

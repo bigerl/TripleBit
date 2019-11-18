@@ -20,12 +20,12 @@ class TimeStamp {
 	struct timeval start, end;
 	double time;
 public:
-	TimeStamp(){
+	TimeStamp() {
 		time = 0;
 	}
 
 	void startTimer() {
-		gettimeofday(&start,NULL);
+		gettimeofday(&start, NULL);
 	}
 
 	void endTimer() {
@@ -33,15 +33,15 @@ public:
 		time = time + ((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec) / 1000.0;
 	}
 
-	void printTime(const char* timername) {
-		fprintf(stderr, "%s time used %f ms.\n", timername,time);
+	void printTime(const char *timername) {
+		fprintf(stderr, "%s time used %f ms.\n", timername, time);
 	}
 
 	void resetTimer() {
 		time = 0;
 	}
 
-	virtual ~TimeStamp(){};
+	virtual ~TimeStamp() {};
 };
 
 #endif /* TIMESTAMP_H_ */

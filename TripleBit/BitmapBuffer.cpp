@@ -33,7 +33,7 @@ BitmapBuffer::BitmapBuffer(const string _dir) : dir(_dir) {
 
 	filename.assign(dir.begin(), dir.end());
 	filename.append("/temp3");
-	temp3 = new MMapBuffer(filename.c_str(), INIT_PAGE_COUNT* MemoryBuffer::pagesize);
+	temp3 = new MMapBuffer(filename.c_str(), INIT_PAGE_COUNT * MemoryBuffer::pagesize);
 
 	filename.assign(dir.begin(), dir.end());
 	filename.append("/temp4");
@@ -44,14 +44,16 @@ BitmapBuffer::BitmapBuffer(const string _dir) : dir(_dir) {
 
 BitmapBuffer::~BitmapBuffer() {
 	// TODO Auto-generated destructor stub
-	for(map<ID, ChunkManager*>::iterator iter = predicate_managers[0].begin(); iter != predicate_managers[0].end(); iter++) {
-		if(iter->second != 0) {
+	for (map<ID, ChunkManager *>::iterator iter = predicate_managers[0].begin();
+	     iter != predicate_managers[0].end(); iter++) {
+		if (iter->second != 0) {
 			delete iter->second;
 			iter->second = NULL;
 		}
 	}
 
-	for (map<ID, ChunkManager*>::iterator iter = predicate_managers[1].begin(); iter != predicate_managers[1].end(); iter++) {
+	for (map<ID, ChunkManager *>::iterator iter = predicate_managers[1].begin();
+	     iter != predicate_managers[1].end(); iter++) {
 		if (iter->second != 0) {
 			delete iter->second;
 			iter->second = NULL;
@@ -59,7 +61,7 @@ BitmapBuffer::~BitmapBuffer() {
 	}
 }
 
-Status BitmapBuffer::insertPredicate(ID id,unsigned char type) {
+Status BitmapBuffer::insertPredicate(ID id, unsigned char type) {
 	predicate_managers[type][id] = new ChunkManager(id, type, this);
 	return OK;
 }
@@ -70,20 +72,19 @@ Status BitmapBuffer::deletePredicate(ID id) {
 
 }
 
-size_t BitmapBuffer::getTripleCount()
-{
+size_t BitmapBuffer::getTripleCount() {
 	size_t tripleCount = 0;
-	map<ID, ChunkManager*>::iterator begin, limit;
-	for(begin = predicate_managers[0].begin(), limit = predicate_managers[0].end(); begin != limit; begin++) {
+	map<ID, ChunkManager *>::iterator begin, limit;
+	for (begin = predicate_managers[0].begin(), limit = predicate_managers[0].end(); begin != limit; begin++) {
 		tripleCount = tripleCount + begin->second->getTripleCount();
 	}
-	cout<<"triple count: "<<tripleCount<<endl;
+	cout << "triple count: " << tripleCount << endl;
 
 	tripleCount = 0;
-	for(begin = predicate_managers[1].begin(), limit = predicate_managers[1].end(); begin != limit; begin++) {
+	for (begin = predicate_managers[1].begin(), limit = predicate_managers[1].end(); begin != limit; begin++) {
 		tripleCount = tripleCount + begin->second->getTripleCount();
 	}
-	cout<<"triple count: "<<tripleCount<<endl;
+	cout << "triple count: " << tripleCount << endl;
 
 	return tripleCount;
 }
@@ -92,9 +93,9 @@ size_t BitmapBuffer::getTripleCount()
  *	@param id: the chunk manager id ( predicate id );
  *       type: the predicate_manager type;
  */
-ChunkManager* BitmapBuffer::getChunkManager(ID id, unsigned char type) {
+ChunkManager *BitmapBuffer::getChunkManager(ID id, unsigned char type) {
 	//there is no predicate_managers[id]
-	if(!predicate_managers[type].count(id)) {
+	if (!predicate_managers[type].count(id)) {
 		//the first time to insert
 		insertPredicate(id, type);
 	}
@@ -112,9 +113,9 @@ Status BitmapBuffer::insertTriple(ID predicateId, ID xId, ID yId, bool flag, uns
 	len = getLen(xId);
 	len += getLen(yId);
 
-	if ( flag == false){
+	if (flag == false) {
 		getChunkManager(predicateId, f)->insertXY(xId, yId, len, 1);
-	}else {
+	} else {
 		getChunkManager(predicateId, f)->insertXY(xId, yId, len, 2);
 	}
 
@@ -122,39 +123,39 @@ Status BitmapBuffer::insertTriple(ID predicateId, ID xId, ID yId, bool flag, uns
 	return OK;
 }
 
-Status BitmapBuffer::completeInsert()
-{
+Status BitmapBuffer::completeInsert() {
 	//TODO do something after complete;
 	startColID = 1;
 
-	for (map<ID, ChunkManager*>::iterator iter = predicate_managers[0].begin(); iter != predicate_managers[0].end(); iter++ ){
-		if(iter->second != 0) {
+	for (map<ID, ChunkManager *>::iterator iter = predicate_managers[0].begin();
+	     iter != predicate_managers[0].end(); iter++) {
+		if (iter->second != 0) {
 			iter->second->setColStartAndEnd(startColID);
 		}
-	//	cout<<startColID<<endl;
+		//	cout<<startColID<<endl;
 	}
 
 	startColID = 1;
-	for (map<ID, ChunkManager*>::iterator iter = predicate_managers[1].begin(); iter != predicate_managers[1].end(); iter++ ){
-		if(iter->second != 0) {
+	for (map<ID, ChunkManager *>::iterator iter = predicate_managers[1].begin();
+	     iter != predicate_managers[1].end(); iter++) {
+		if (iter->second != 0) {
 			iter->second->setColStartAndEnd(startColID);
 		}
-	//	cout<<startColID<<endl;
+		//	cout<<startColID<<endl;
 	}
 
 	return OK;
 }
 
-void BitmapBuffer::insert(ID predicateID,ID subjectID,ID objectID)
-{
+void BitmapBuffer::insert(ID predicateID, ID subjectID, ID objectID) {
 	bool isBigger = false; //sequence flag of subject and object
-	if(subjectID > objectID){
+	if (subjectID > objectID) {
 		isBigger = true;
 	}
 
-	generateXY(subjectID,objectID);
+	generateXY(subjectID, objectID);
 
-	unsigned char xLen,yLen;
+	unsigned char xLen, yLen;
 	xLen = getBytes(subjectID);
 	//yLen = GetBytes(objectID);
 	yLen = 4;
@@ -163,54 +164,49 @@ void BitmapBuffer::insert(ID predicateID,ID subjectID,ID objectID)
 //	insertTriple(predicateID,subjectID,xLen,objectID,yLen,isBigger);
 }
 
-void BitmapBuffer::flush()
-{
+void BitmapBuffer::flush() {
 	temp1->flush();
 	temp2->flush();
 	temp3->flush();
 	temp4->flush();
 }
 
-void BitmapBuffer::generateXY(ID& subjectID, ID& objectID)
-{
+void BitmapBuffer::generateXY(ID &subjectID, ID &objectID) {
 	ID temp;
 
-	if(subjectID > objectID)
-	{
+	if (subjectID > objectID) {
 		temp = subjectID;
 		subjectID = objectID;
 		objectID = temp - objectID;
-	}else{
+	} else {
 		objectID = objectID - subjectID;
 	}
 }
 
-unsigned char BitmapBuffer::getBytes(ID id)
-{
-	if(id <=0xFF){
+unsigned char BitmapBuffer::getBytes(ID id) {
+	if (id <= 0xFF) {
 		return 1;
-	}else if(id <= 0xFFFF){
+	} else if (id <= 0xFFFF) {
 		return 2;
-	}else if(id <= 0xFFFFFF){
+	} else if (id <= 0xFFFFFF) {
 		return 3;
-	}else if(id <= 0xFFFFFFFF){
+	} else if (id <= 0xFFFFFFFF) {
 		return 4;
-	}else{
+	} else {
 		return 0;
 	}
 }
 
-char* BitmapBuffer::getPage(unsigned char type, unsigned char flag, size_t& pageNo)
-{
-	char* rt;
+char *BitmapBuffer::getPage(unsigned char type, unsigned char flag, size_t &pageNo) {
+	char *rt;
 	bool tempresize = false;
 	MMapBuffer *temp = NULL;
 
 	//cout<<__FUNCTION__<<" begin"<<endl;
 
-	if(type == 0 ) {
-		if(flag == 0) {
-			if(usedPage1 * MemoryBuffer::pagesize >= temp1->getSize()) {
+	if (type == 0) {
+		if (flag == 0) {
+			if (usedPage1 * MemoryBuffer::pagesize >= temp1->getSize()) {
 				temp1->resize(INCREMENT_PAGE_COUNT * MemoryBuffer::pagesize);
 				temp = temp1;
 				tempresize = true;
@@ -219,7 +215,7 @@ char* BitmapBuffer::getPage(unsigned char type, unsigned char flag, size_t& page
 			rt = temp1->get_address() + usedPage1 * MemoryBuffer::pagesize;
 			usedPage1++;
 		} else {
-			if(usedPage2 * MemoryBuffer::pagesize >= temp2->getSize()) {
+			if (usedPage2 * MemoryBuffer::pagesize >= temp2->getSize()) {
 				temp2->resize(INCREMENT_PAGE_COUNT * MemoryBuffer::pagesize);
 				temp = temp2;
 				tempresize = true;
@@ -229,8 +225,8 @@ char* BitmapBuffer::getPage(unsigned char type, unsigned char flag, size_t& page
 			usedPage2++;
 		}
 	} else {
-		if(flag == 0) {
-			if(usedPage3 * MemoryBuffer::pagesize >= temp3->getSize()) {
+		if (flag == 0) {
+			if (usedPage3 * MemoryBuffer::pagesize >= temp3->getSize()) {
 				temp3->resize(INCREMENT_PAGE_COUNT * MemoryBuffer::pagesize);
 				temp = temp3;
 				tempresize = true;
@@ -239,7 +235,7 @@ char* BitmapBuffer::getPage(unsigned char type, unsigned char flag, size_t& page
 			rt = temp3->get_address() + usedPage3 * MemoryBuffer::pagesize;
 			usedPage3++;
 		} else {
-			if(usedPage4 * MemoryBuffer::pagesize >= temp4->getSize()) {
+			if (usedPage4 * MemoryBuffer::pagesize >= temp4->getSize()) {
 				temp4->resize(INCREMENT_PAGE_COUNT * MemoryBuffer::pagesize);
 				temp = temp4;
 				tempresize = true;
@@ -250,60 +246,82 @@ char* BitmapBuffer::getPage(unsigned char type, unsigned char flag, size_t& page
 		}
 	}
 
-	if(tempresize == true ) {
-		if(type == 0) {
-			if(flag == 0) {
-				map<ID, ChunkManager*>::iterator iter, limit;
-				iter = predicate_managers[0].begin(); limit = predicate_managers[0].end();
-				for(; iter != limit; iter++) {
-					if(iter->second == NULL)
+	if (tempresize == true) {
+		if (type == 0) {
+			if (flag == 0) {
+				map<ID, ChunkManager *>::iterator iter, limit;
+				iter = predicate_managers[0].begin();
+				limit = predicate_managers[0].end();
+				for (; iter != limit; iter++) {
+					if (iter->second == NULL)
 						continue;
-					iter->second->meta = (ChunkManagerMeta*)(temp1->get_address() + iter->second->usedPage[0][0] * MemoryBuffer::pagesize);
-					if(iter->second->usedPage[0].size() == 1) {
-						iter->second->meta->endPtr[0] = temp1->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
-								MemoryBuffer::pagesize - (iter->second->meta->length[0] - iter->second->meta->usedSpace[0] - sizeof(ChunkManagerMeta));
+					iter->second->meta = (ChunkManagerMeta *) (temp1->get_address() +
+					                                           iter->second->usedPage[0][0] * MemoryBuffer::pagesize);
+					if (iter->second->usedPage[0].size() == 1) {
+						iter->second->meta->endPtr[0] =
+								temp1->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
+								MemoryBuffer::pagesize -
+								(iter->second->meta->length[0] - iter->second->meta->usedSpace[0] -
+								 sizeof(ChunkManagerMeta));
 					} else {
-						iter->second->meta->endPtr[0] = temp1->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
-								MemoryBuffer::pagesize - (iter->second->meta->length[0] - iter->second->meta->usedSpace[0] - sizeof(ChunkManagerMeta));
+						iter->second->meta->endPtr[0] =
+								temp1->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
+								MemoryBuffer::pagesize -
+								(iter->second->meta->length[0] - iter->second->meta->usedSpace[0] -
+								 sizeof(ChunkManagerMeta));
 					}
-					iter->second->meta->endPtr[1] = temp2->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
+					iter->second->meta->endPtr[1] =
+							temp2->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
 							MemoryBuffer::pagesize - (iter->second->meta->length[1] - iter->second->meta->usedSpace[1]);
 				}
 			} else {
-				map<ID, ChunkManager*>::iterator iter, limit;
-				iter = predicate_managers[0].begin(); limit = predicate_managers[0].end();
-				for(; iter != limit; iter++) {
-					if(iter->second == NULL)
+				map<ID, ChunkManager *>::iterator iter, limit;
+				iter = predicate_managers[0].begin();
+				limit = predicate_managers[0].end();
+				for (; iter != limit; iter++) {
+					if (iter->second == NULL)
 						continue;
-					iter->second->meta->endPtr[1] = temp2->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
+					iter->second->meta->endPtr[1] =
+							temp2->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
 							MemoryBuffer::pagesize - (iter->second->meta->length[1] - iter->second->meta->usedSpace[1]);
 				}
 			}
-		} else if(type == 1) {
-			if(flag == 0) {
-				map<ID, ChunkManager*>::iterator iter, limit;
-				iter = predicate_managers[1].begin(); limit = predicate_managers[1].end();
-				for(; iter != limit; iter++) {
-					if(iter->second == NULL)
+		} else if (type == 1) {
+			if (flag == 0) {
+				map<ID, ChunkManager *>::iterator iter, limit;
+				iter = predicate_managers[1].begin();
+				limit = predicate_managers[1].end();
+				for (; iter != limit; iter++) {
+					if (iter->second == NULL)
 						continue;
-					iter->second->meta = (ChunkManagerMeta*)(temp3->get_address() + iter->second->usedPage[0][0] * MemoryBuffer::pagesize);
-					if(iter->second->usedPage[0].size() == 1) {
-						iter->second->meta->endPtr[0] = temp3->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
-								MemoryBuffer::pagesize - (iter->second->meta->length[0] - iter->second->meta->usedSpace[0] - sizeof(ChunkManagerMeta));
+					iter->second->meta = (ChunkManagerMeta *) (temp3->get_address() +
+					                                           iter->second->usedPage[0][0] * MemoryBuffer::pagesize);
+					if (iter->second->usedPage[0].size() == 1) {
+						iter->second->meta->endPtr[0] =
+								temp3->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
+								MemoryBuffer::pagesize -
+								(iter->second->meta->length[0] - iter->second->meta->usedSpace[0] -
+								 sizeof(ChunkManagerMeta));
 					} else {
-						iter->second->meta->endPtr[0] = temp3->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
-								MemoryBuffer::pagesize - (iter->second->meta->length[0] - iter->second->meta->usedSpace[0] - sizeof(ChunkManagerMeta));
+						iter->second->meta->endPtr[0] =
+								temp3->get_address() + iter->second->usedPage[0].back() * MemoryBuffer::pagesize +
+								MemoryBuffer::pagesize -
+								(iter->second->meta->length[0] - iter->second->meta->usedSpace[0] -
+								 sizeof(ChunkManagerMeta));
 					}
-					iter->second->meta->endPtr[1] = temp4->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
+					iter->second->meta->endPtr[1] =
+							temp4->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
 							MemoryBuffer::pagesize - (iter->second->meta->length[1] - iter->second->meta->usedSpace[1]);
 				}
 			} else {
-				map<ID, ChunkManager*>::iterator iter, limit;
-				iter = predicate_managers[1].begin(); limit = predicate_managers[1].end();
-				for(; iter != limit; iter++) {
-					if(iter->second == NULL)
+				map<ID, ChunkManager *>::iterator iter, limit;
+				iter = predicate_managers[1].begin();
+				limit = predicate_managers[1].end();
+				for (; iter != limit; iter++) {
+					if (iter->second == NULL)
 						continue;
-					iter->second->meta->endPtr[1] = temp4->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
+					iter->second->meta->endPtr[1] =
+							temp4->get_address() + iter->second->usedPage[1].back() * MemoryBuffer::pagesize +
 							MemoryBuffer::pagesize - (iter->second->meta->length[1] - iter->second->meta->usedSpace[1]);
 				}
 			}
@@ -317,33 +335,33 @@ char* BitmapBuffer::getPage(unsigned char type, unsigned char flag, size_t& page
 
 unsigned char BitmapBuffer::getLen(ID id) {
 	unsigned char len = 0;
-	while(id >= 128) {
+	while (id >= 128) {
 		len++;
 		id >>= 7;
 	}
 	return len + 1;
 }
 
-void BitmapBuffer::save()
-{
+void BitmapBuffer::save() {
 	//loadfromtemp();
 	static bool first = true;
 	string filename = dir + "/BitmapBuffer";
-	MMapBuffer * buffer; //new MMapBuffer(filename.c_str(), 0);
+	MMapBuffer *buffer; //new MMapBuffer(filename.c_str(), 0);
 	string predicateFile(filename);
 	predicateFile.append("_predicate");
 
-	MMapBuffer * predicateBuffer =new MMapBuffer(predicateFile.c_str(), predicate_managers[0].size() * (sizeof(ID) + sizeof(size_t)) * 2);
+	MMapBuffer *predicateBuffer = new MMapBuffer(predicateFile.c_str(),
+	                                             predicate_managers[0].size() * (sizeof(ID) + sizeof(size_t)) * 2);
 
-	char* predicateWriter = predicateBuffer->get_address();
-	char* bufferWriter = NULL;
+	char *predicateWriter = predicateBuffer->get_address();
+	char *bufferWriter = NULL;
 
-	map<ID, ChunkManager*>::const_iterator iter = predicate_managers[0].begin();
-	char* startPtr;
+	map<ID, ChunkManager *>::const_iterator iter = predicate_managers[0].begin();
+	char *startPtr;
 	size_t offset = 0;
 	startPtr = iter->second->ptrs[0];
 
-	if(first == true) {
+	if (first == true) {
 		buffer = new MMapBuffer(filename.c_str(), iter->second->meta->length[0]);
 		//offset = buffer->get_offset();
 		//first = false;
@@ -357,21 +375,24 @@ void BitmapBuffer::save()
 	vector<size_t>::iterator pageNoIter = iter->second->usedPage[0].begin(),
 			limit = iter->second->usedPage[0].end();
 
-	for(; pageNoIter != limit; pageNoIter++ ) {
+	for (; pageNoIter != limit; pageNoIter++) {
 		size_t pageNo = *pageNoIter;
 		memcpy(bufferWriter, temp1->get_address() + pageNo * MemoryBuffer::pagesize, MemoryBuffer::pagesize);
 		bufferWriter = bufferWriter + MemoryBuffer::pagesize;
 	}
 
-	*((ID*)predicateWriter) = iter->first; predicateWriter = predicateWriter + sizeof(ID);
-	*((size_t*)predicateWriter) = offset; predicateWriter = predicateWriter + sizeof(size_t);
+	*((ID *) predicateWriter) = iter->first;
+	predicateWriter = predicateWriter + sizeof(ID);
+	*((size_t *) predicateWriter) = offset;
+	predicateWriter = predicateWriter + sizeof(size_t);
 	offset = offset + iter->second->meta->length[0];
 
 	bufferWriter = buffer->resize(iter->second->meta->length[1]);
-	char* startPos = bufferWriter + offset;
+	char *startPos = bufferWriter + offset;
 
-	pageNoIter = iter->second->usedPage[1].begin(); limit = iter->second->usedPage[1].end();
-	for(; pageNoIter != limit; pageNoIter++ ) {
+	pageNoIter = iter->second->usedPage[1].begin();
+	limit = iter->second->usedPage[1].end();
+	for (; pageNoIter != limit; pageNoIter++) {
 		size_t pageNo = *pageNoIter;
 		memcpy(startPos, temp2->get_address() + pageNo * MemoryBuffer::pagesize, MemoryBuffer::pagesize);
 		startPos = startPos + MemoryBuffer::pagesize;
@@ -381,13 +402,14 @@ void BitmapBuffer::save()
 	offset = offset + iter->second->meta->length[1];
 
 	iter++;
-	for(; iter != predicate_managers[0].end(); iter++) {
+	for (; iter != predicate_managers[0].end(); iter++) {
 		bufferWriter = buffer->resize(iter->second->meta->length[0]);
 		startPos = bufferWriter + offset;
 
-		pageNoIter = iter->second->usedPage[0].begin(); limit = iter->second->usedPage[0].end();
+		pageNoIter = iter->second->usedPage[0].begin();
+		limit = iter->second->usedPage[0].end();
 
-		for(; pageNoIter != limit; pageNoIter++) {
+		for (; pageNoIter != limit; pageNoIter++) {
 			size_t pageNo = *pageNoIter;
 			memcpy(startPos, temp1->get_address() + pageNo * MemoryBuffer::pagesize, MemoryBuffer::pagesize);
 			startPos = startPos + MemoryBuffer::pagesize;
@@ -396,8 +418,10 @@ void BitmapBuffer::save()
 
 		//iter->second->meta->endPtr[0] = startPos + iter->second->meta->usedSpace[0];  //used to build index;
 
-		*((ID*)predicateWriter) = iter->first; predicateWriter = predicateWriter + sizeof(ID);
-		*((size_t*)predicateWriter) = offset; predicateWriter = predicateWriter + sizeof(size_t);
+		*((ID *) predicateWriter) = iter->first;
+		predicateWriter = predicateWriter + sizeof(ID);
+		*((size_t *) predicateWriter) = offset;
+		predicateWriter = predicateWriter + sizeof(size_t);
 		offset += iter->second->meta->length[0];
 
 		assert(iter->second->usedPage[0].size() * MemoryBuffer::pagesize == iter->second->meta->length[0]);
@@ -406,8 +430,9 @@ void BitmapBuffer::save()
 		startPos = bufferWriter + offset;
 		//iter->second->meta->startPtr[1] = startPos; //used to build index;
 		//iter->second->meta->endPtr[1] = startPos + iter->second->meta->usedSpace[1];
-		pageNoIter = iter->second->usedPage[1].begin(); limit = iter->second->usedPage[1].end();
-		for(; pageNoIter != limit; pageNoIter++) {
+		pageNoIter = iter->second->usedPage[1].begin();
+		limit = iter->second->usedPage[1].end();
+		for (; pageNoIter != limit; pageNoIter++) {
 			size_t pageNo = *pageNoIter;
 			memcpy(startPos, temp2->get_address() + pageNo * MemoryBuffer::pagesize, MemoryBuffer::pagesize);
 			startPos = startPos + MemoryBuffer::pagesize;
@@ -422,19 +447,22 @@ void BitmapBuffer::save()
 	temp2->discard();
 
 	iter = predicate_managers[1].begin();
-	for(; iter != predicate_managers[1].end(); iter++) {
+	for (; iter != predicate_managers[1].end(); iter++) {
 		bufferWriter = buffer->resize(iter->second->meta->length[0]);
 		startPos = bufferWriter + offset;
 
-		pageNoIter = iter->second->usedPage[0].begin(); limit = iter->second->usedPage[0].end();
-		for(; pageNoIter != limit; pageNoIter++) {
+		pageNoIter = iter->second->usedPage[0].begin();
+		limit = iter->second->usedPage[0].end();
+		for (; pageNoIter != limit; pageNoIter++) {
 			size_t pageNo = *pageNoIter;
 			memcpy(startPos, temp3->get_address() + pageNo * MemoryBuffer::pagesize, MemoryBuffer::pagesize);
 			startPos = startPos + MemoryBuffer::pagesize;
 		}
 
-		*((ID*)predicateWriter) = iter->first; predicateWriter = predicateWriter + sizeof(ID);
-		*((size_t*)predicateWriter) = offset; predicateWriter = predicateWriter + sizeof(size_t);
+		*((ID *) predicateWriter) = iter->first;
+		predicateWriter = predicateWriter + sizeof(ID);
+		*((size_t *) predicateWriter) = offset;
+		predicateWriter = predicateWriter + sizeof(size_t);
 		offset += iter->second->meta->length[0];
 
 		assert(iter->second->usedPage[0].size() * MemoryBuffer::pagesize == iter->second->meta->length[0]);
@@ -442,8 +470,9 @@ void BitmapBuffer::save()
 		bufferWriter = buffer->resize(iter->second->usedPage[1].size() * MemoryBuffer::pagesize);
 		startPos = bufferWriter + offset;
 
-		pageNoIter = iter->second->usedPage[1].begin(); limit = iter->second->usedPage[1].end();
-		for(; pageNoIter != limit; pageNoIter++) {
+		pageNoIter = iter->second->usedPage[1].begin();
+		limit = iter->second->usedPage[1].end();
+		for (; pageNoIter != limit; pageNoIter++) {
 			size_t pageNo = *pageNoIter;
 			memcpy(startPos, temp4->get_address() + pageNo * MemoryBuffer::pagesize, MemoryBuffer::pagesize);
 			startPos = startPos + MemoryBuffer::pagesize;
@@ -459,15 +488,15 @@ void BitmapBuffer::save()
 	int i = 0;
 
 	ID id;
-	for(iter = predicate_managers[0].begin(); iter != predicate_managers[0].end(); iter++, i++) {
-		id = *((ID*)predicateWriter);
+	for (iter = predicate_managers[0].begin(); iter != predicate_managers[0].end(); iter++, i++) {
+		id = *((ID *) predicateWriter);
 		assert(iter->first == id);
 		predicateWriter = predicateWriter + sizeof(ID);
-		offset = *((size_t*)predicateWriter);
+		offset = *((size_t *) predicateWriter);
 		predicateWriter = predicateWriter + sizeof(size_t);
 
-		char* base = buffer->get_address() + offset;
-		iter->second->meta = (ChunkManagerMeta*)base;
+		char *base = buffer->get_address() + offset;
+		iter->second->meta = (ChunkManagerMeta *) base;
 		iter->second->meta->startPtr[0] = base + sizeof(ChunkManagerMeta);
 		iter->second->meta->endPtr[0] = iter->second->meta->startPtr[0] + iter->second->meta->usedSpace[0];
 		iter->second->meta->startPtr[1] = base + iter->second->meta->length[0];
@@ -475,15 +504,15 @@ void BitmapBuffer::save()
 		//::printMeta(*(iter->second->meta));
 	}
 
-	for(iter = predicate_managers[1].begin(); iter != predicate_managers[1].end(); iter++, i++) {
-		id = *((ID*)predicateWriter);
+	for (iter = predicate_managers[1].begin(); iter != predicate_managers[1].end(); iter++, i++) {
+		id = *((ID *) predicateWriter);
 		assert(iter->first == id);
 		predicateWriter = predicateWriter + sizeof(ID);
-		offset = *((size_t*)predicateWriter);
+		offset = *((size_t *) predicateWriter);
 		predicateWriter = predicateWriter + sizeof(size_t);
 
-		char* base = buffer->get_address() + offset;
-		iter->second->meta = (ChunkManagerMeta*)base;
+		char *base = buffer->get_address() + offset;
+		iter->second->meta = (ChunkManagerMeta *) base;
 		iter->second->meta->startPtr[0] = base + sizeof(ChunkManagerMeta);
 		iter->second->meta->endPtr[0] = iter->second->meta->startPtr[0] + iter->second->meta->usedSpace[0];
 		iter->second->meta->startPtr[1] = base + iter->second->meta->length[0];
@@ -495,12 +524,13 @@ void BitmapBuffer::save()
 	temp4->discard();
 
 	//build index;
-	MMapBuffer* bitmapIndex = NULL;
+	MMapBuffer *bitmapIndex = NULL;
 #ifdef DEBUG
 	cout<<"build hash index for subject"<<endl;
 #endif
-	for ( map<ID,ChunkManager*>::iterator iter = predicate_managers[0].begin(); iter != predicate_managers[0].end(); iter++ ) {
-		if ( iter->second != NULL ) {
+	for (map<ID, ChunkManager *>::iterator iter = predicate_managers[0].begin();
+	     iter != predicate_managers[0].end(); iter++) {
+		if (iter->second != NULL) {
 #ifdef DEBUG
 			cout<<iter->first<<endl;
 #endif
@@ -513,8 +543,9 @@ void BitmapBuffer::save()
 #ifdef DEBUG
 	cout<<"build hash index for object"<<endl;
 #endif
-	for ( map<ID, ChunkManager*>::iterator iter = predicate_managers[1].begin(); iter != predicate_managers[1].end(); iter++ ) {
-		if ( iter->second != NULL ) {
+	for (map<ID, ChunkManager *>::iterator iter = predicate_managers[1].begin();
+	     iter != predicate_managers[1].end(); iter++) {
+		if (iter->second != NULL) {
 #ifdef DEBUF
 			cout<<iter->first<<endl;
 #endif
@@ -530,34 +561,40 @@ void BitmapBuffer::save()
 
 }
 
-BitmapBuffer*  BitmapBuffer::load(MMapBuffer* bitmapImage, MMapBuffer*& bitmapIndexImage, MMapBuffer* bitmapPredicateImage)
-{
+BitmapBuffer *
+BitmapBuffer::load(MMapBuffer *bitmapImage, MMapBuffer *&bitmapIndexImage, MMapBuffer *bitmapPredicateImage) {
 	//TODO load objects from image file;
-	BitmapBuffer* buffer = new BitmapBuffer();
+	BitmapBuffer *buffer = new BitmapBuffer();
 
-	char* predicateReader = bitmapPredicateImage->getBuffer();
+	char *predicateReader = bitmapPredicateImage->getBuffer();
 
 	size_t predicateSize = bitmapPredicateImage->getSize() / ((sizeof(ID) + sizeof(size_t)) * 2);
 	ID id;
 	size_t offset = 0, indexOffset = 0;
-	for(size_t i = 0; i < predicateSize; i++) {
-		id = *((ID*)predicateReader); predicateReader = predicateReader + sizeof(ID);
+	for (size_t i = 0; i < predicateSize; i++) {
+		id = *((ID *) predicateReader);
+		predicateReader = predicateReader + sizeof(ID);
 		predicateReader = predicateReader + sizeof(size_t);
-		ChunkManager* manager = ChunkManager::load(id, 0, bitmapImage->getBuffer(), offset);
-		manager->chunkIndex[0] = LineHashIndex::load(*manager, LineHashIndex::SUBJECT_INDEX, bitmapIndexImage->getBuffer(), indexOffset);
-		manager->chunkIndex[1] = LineHashIndex::load(*manager, LineHashIndex::SUBJECT_INDEX, bitmapIndexImage->getBuffer(), indexOffset);
+		ChunkManager *manager = ChunkManager::load(id, 0, bitmapImage->getBuffer(), offset);
+		manager->chunkIndex[0] = LineHashIndex::load(*manager, LineHashIndex::SUBJECT_INDEX,
+		                                             bitmapIndexImage->getBuffer(), indexOffset);
+		manager->chunkIndex[1] = LineHashIndex::load(*manager, LineHashIndex::SUBJECT_INDEX,
+		                                             bitmapIndexImage->getBuffer(), indexOffset);
 
 		buffer->predicate_managers[0][id] = manager;
 	}
 
-	for(size_t i = 0; i < predicateSize; i++) {
-		id = *((ID*)predicateReader); predicateReader = predicateReader + sizeof(ID);
-		offset = *((size_t*)predicateReader);
+	for (size_t i = 0; i < predicateSize; i++) {
+		id = *((ID *) predicateReader);
+		predicateReader = predicateReader + sizeof(ID);
+		offset = *((size_t *) predicateReader);
 		predicateReader = predicateReader + sizeof(size_t);
 
-		ChunkManager* manager = ChunkManager::load(id, 1, bitmapImage->getBuffer(), offset);
-		manager->chunkIndex[0] = LineHashIndex::load(*manager, LineHashIndex::OBJECT_INDEX, bitmapIndexImage->getBuffer(), indexOffset);
-		manager->chunkIndex[1] = LineHashIndex::load(*manager, LineHashIndex::OBJECT_INDEX, bitmapIndexImage->getBuffer(), indexOffset);
+		ChunkManager *manager = ChunkManager::load(id, 1, bitmapImage->getBuffer(), offset);
+		manager->chunkIndex[0] = LineHashIndex::load(*manager, LineHashIndex::OBJECT_INDEX,
+		                                             bitmapIndexImage->getBuffer(), indexOffset);
+		manager->chunkIndex[1] = LineHashIndex::load(*manager, LineHashIndex::OBJECT_INDEX,
+		                                             bitmapIndexImage->getBuffer(), indexOffset);
 
 		buffer->predicate_managers[1][id] = manager;
 	}
@@ -567,7 +604,7 @@ BitmapBuffer*  BitmapBuffer::load(MMapBuffer* bitmapImage, MMapBuffer*& bitmapIn
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void getTempFilename(string& filename, unsigned pid, unsigned _type) {
+void getTempFilename(string &filename, unsigned pid, unsigned _type) {
 	filename.clear();
 	filename.append(DATABASE_PATH);
 	filename.append("temp_");
@@ -578,7 +615,7 @@ void getTempFilename(string& filename, unsigned pid, unsigned _type) {
 	filename.append(temp);
 }
 
-ChunkManager::ChunkManager(unsigned pid, unsigned _type, BitmapBuffer* _bitmapBuffer) : bitmapBuffer(_bitmapBuffer) {
+ChunkManager::ChunkManager(unsigned pid, unsigned _type, BitmapBuffer *_bitmapBuffer) : bitmapBuffer(_bitmapBuffer) {
 	/*string filename;
 	getTempFilename(filename, pid, _type);
 	filename.append("_0");
@@ -586,7 +623,8 @@ ChunkManager::ChunkManager(unsigned pid, unsigned _type, BitmapBuffer* _bitmapBu
 	getTempFilename(filename, pid, _type);
 	filename.append("_1");
 	ptrs[1] = new MMapBuffer(filename.c_str(), INIT_PAGE_COUNT * MemoryBuffer::pagesize);*/
-	usedPage[0].resize(0); usedPage[1].resize(0);
+	usedPage[0].resize(0);
+	usedPage[1].resize(0);
 	size_t pageNo = 0;
 	meta = NULL;
 	ptrs[0] = bitmapBuffer->getPage(_type, 0, pageNo);
@@ -596,8 +634,8 @@ ChunkManager::ChunkManager(unsigned pid, unsigned _type, BitmapBuffer* _bitmapBu
 
 	assert(ptrs[1] != ptrs[0]);
 
-	meta = (ChunkManagerMeta*)ptrs[0];
-	memset((char*)meta, 0, sizeof(ChunkManagerMeta));
+	meta = (ChunkManagerMeta *) ptrs[0];
+	memset((char *) meta, 0, sizeof(ChunkManagerMeta));
 	meta->endPtr[0] = meta->startPtr[0] = ptrs[0] + sizeof(ChunkManagerMeta);
 	meta->endPtr[1] = meta->startPtr[1] = ptrs[1];
 	meta->length[0] = usedPage[0].size() * MemoryBuffer::pagesize;
@@ -609,7 +647,7 @@ ChunkManager::ChunkManager(unsigned pid, unsigned _type, BitmapBuffer* _bitmapBu
 	meta->type = _type;
 
 	//need to modify!
-	if( meta->type == 0) {
+	if (meta->type == 0) {
 		chunkIndex[0] = new LineHashIndex(*this, LineHashIndex::SUBJECT_INDEX);
 		chunkIndex[1] = new LineHashIndex(*this, LineHashIndex::SUBJECT_INDEX);
 	} else {
@@ -627,10 +665,10 @@ ChunkManager::~ChunkManager() {
 	///free the buffer;
 	ptrs[0] = ptrs[1] = NULL;
 
-	if(chunkIndex[0] != NULL)
+	if (chunkIndex[0] != NULL)
 		delete chunkIndex[0];
 	chunkIndex[0] = NULL;
-	if(chunkIndex[1] != NULL)
+	if (chunkIndex[1] != NULL)
 		delete chunkIndex[1];
 	chunkIndex[1] = NULL;
 }
@@ -640,8 +678,8 @@ Status ChunkManager::deleteChunk() {
 	return OK;
 }
 
-static void getInsertChars(char* temp, unsigned x, unsigned y) {
-	char* ptr = temp;
+static void getInsertChars(char *temp, unsigned x, unsigned y) {
+	char *ptr = temp;
 
 	while (x >= 128) {
 		unsigned char c = static_cast<unsigned char> (x & 127);
@@ -662,15 +700,14 @@ static void getInsertChars(char* temp, unsigned x, unsigned y) {
 	ptr++;
 }
 
-void ChunkManager::insertXY(unsigned x, unsigned y, unsigned len, unsigned char type)
-{
+void ChunkManager::insertXY(unsigned x, unsigned y, unsigned len, unsigned char type) {
 	char temp[10];
 	getInsertChars(temp, x, y);
 
 	unsigned offset = 0;
 	unsigned remain = len;
-	if(isPtrFull(type, len) == true) {
-		if(type == 1) {
+	if (isPtrFull(type, len) == true) {
+		if (type == 1) {
 			offset = meta->length[0] - meta->usedSpace[0] - sizeof(ChunkManagerMeta);
 		} else {
 			offset = meta->length[1] - meta->usedSpace[1];
@@ -708,61 +745,55 @@ Status ChunkManager::optimize() {
 }
 
 /// build the hash index for query;
-Status ChunkManager::buildChunkIndex()
-{
+Status ChunkManager::buildChunkIndex() {
 	chunkIndex[0]->buildIndex(1);
 	chunkIndex[1]->buildIndex(2);
 
 	return OK;
 }
 
-Status ChunkManager::getChunkPosByID(ID id, unsigned typeID, unsigned& offset)
-{
-	if(typeID == 1) {
+Status ChunkManager::getChunkPosByID(ID id, unsigned typeID, unsigned &offset) {
+	if (typeID == 1) {
 		return chunkIndex[0]->getOffsetByID(id, offset, typeID);
-	}else if(typeID  == 2) {
+	} else if (typeID == 2) {
 		return chunkIndex[1]->getOffsetByID(id, offset, typeID);
 	}
 
-	cerr<<"unknown type id"<<endl;
+	cerr << "unknown type id" << endl;
 	return ERROR;
 }
 
-void ChunkManager::setColStartAndEnd(ID& startColID)
-{
+void ChunkManager::setColStartAndEnd(ID &startColID) {
 }
 
-int ChunkManager::findChunkPosByPtr(char* chunkPtr, int& offSet)
-{
+int ChunkManager::findChunkPosByPtr(char *chunkPtr, int &offSet) {
 	return -1;
 }
 
-bool ChunkManager::isPtrFull(unsigned char type, unsigned len)
-{
-	if(type == 1) {
+bool ChunkManager::isPtrFull(unsigned char type, unsigned len) {
+	if (type == 1) {
 		len = len + sizeof(ChunkManagerMeta);
 	}
 	return meta->usedSpace[type - 1] + len >= meta->length[type - 1];
 }
 
-void ChunkManager::save(ofstream& ofile)
-{
+void ChunkManager::save(ofstream &ofile) {
 
 }
 
-ChunkManager* ChunkManager::load(unsigned pid, unsigned type, char* buffer, size_t& offset)
-{
-	ChunkManagerMeta * meta = (ChunkManagerMeta*)(buffer + offset);
-	if(meta->pid != pid || meta->type != type) {
+ChunkManager *ChunkManager::load(unsigned pid, unsigned type, char *buffer, size_t &offset) {
+	ChunkManagerMeta *meta = (ChunkManagerMeta *) (buffer + offset);
+	if (meta->pid != pid || meta->type != type) {
 		MessageEngine::showMessage("load chunkmanager error: check meta info", MessageEngine::ERROR);
-		cout<<meta->pid<<": "<<meta->type<<endl;
+		cout << meta->pid << ": " << meta->type << endl;
 		return NULL;
 	}
 
-	ChunkManager* manager = new ChunkManager();
-	char* base = buffer + offset + sizeof(ChunkManagerMeta);
+	ChunkManager *manager = new ChunkManager();
+	char *base = buffer + offset + sizeof(ChunkManagerMeta);
 	manager->meta = meta;
-	manager->meta->startPtr[0] = base; manager->meta->startPtr[1] = buffer + offset + manager->meta->length[0];
+	manager->meta->startPtr[0] = base;
+	manager->meta->startPtr[1] = buffer + offset + manager->meta->length[0];
 	manager->meta->endPtr[0] = manager->meta->startPtr[0] + manager->meta->usedSpace[0];
 	manager->meta->endPtr[1] = manager->meta->startPtr[1] + manager->meta->usedSpace[1];
 
@@ -773,7 +804,7 @@ ChunkManager* ChunkManager::load(unsigned pid, unsigned type, char* buffer, size
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Chunk::Chunk(unsigned char type, ID xMax, ID xMin, ID yMax, ID yMin, char* startPtr, char* endPtr) {
+Chunk::Chunk(unsigned char type, ID xMax, ID xMin, ID yMax, ID yMin, char *startPtr, char *endPtr) {
 	// TODO Auto-generated constructor stub
 	this->type = type;
 	this->xMax = xMax;
@@ -786,8 +817,8 @@ Chunk::Chunk(unsigned char type, ID xMax, ID xMin, ID yMax, ID yMin, char* start
 	this->flagVector = new BitVectorWAH;
 }
 
-Chunk::Chunk(unsigned char type,ID xMax, ID xMin, ID yMax, ID yMin, char* startPtr, char* endPtr, BitVectorWAH* flagVector)
-{
+Chunk::Chunk(unsigned char type, ID xMax, ID xMin, ID yMax, ID yMin, char *startPtr, char *endPtr,
+             BitVectorWAH *flagVector) {
 	this->type = type;
 	this->xMax = xMax;
 	this->xMin = xMin;
@@ -809,7 +840,7 @@ Chunk::~Chunk() {
 /*
  *	write x id; set the 7th bit to 0 to indicate it is a x byte;
  */
-void Chunk::writeXId(ID id, char*& ptr) {
+void Chunk::writeXId(ID id, char *&ptr) {
 // Write a id
 	while (id >= 128) {
 		unsigned char c = static_cast<unsigned char> (id & 127);
@@ -824,7 +855,7 @@ void Chunk::writeXId(ID id, char*& ptr) {
 /*
  *	write y id; set the 7th bit to 1 to indicate it is a y byte;
  */
-void Chunk::writeYId(ID id, char*& ptr) {
+void Chunk::writeYId(ID id, char *&ptr) {
 	while (id >= 128) {
 		unsigned char c = static_cast<unsigned char> (id | 128);
 		*ptr = c;
@@ -835,13 +866,13 @@ void Chunk::writeYId(ID id, char*& ptr) {
 	ptr++;
 }
 
-Status Chunk::insertXY(ID xId, ID yId, unsigned char xLen, unsigned char yLen,bool flag) {
-	if(isChunkFull())
+Status Chunk::insertXY(ID xId, ID yId, unsigned char xLen, unsigned char yLen, bool flag) {
+	if (isChunkFull())
 		return CHUNK_IS_FULL;
 	//mem write xId yId by xLen and yLen
-	memcpy(endPtr,&xId,xLen);
+	memcpy(endPtr, &xId, xLen);
 	endPtr += xLen;
-	memcpy(endPtr,&yId,yLen);
+	memcpy(endPtr, &yId, yLen);
 	endPtr += yLen;
 	//modify xMin xMax yMax yMin
 	//maybe there is useless
@@ -874,8 +905,7 @@ Status Chunk::insertXY(ID xId, ID yId, bool flag) {
 	return OK;
 }
 
-Status Chunk::completeInsert(ID& startColID)
-{
+Status Chunk::completeInsert(ID &startColID) {
 //	flagVector->completeInsert();
 
 	//set the start and end column ID
@@ -899,40 +929,39 @@ Status Chunk::completeInsert(ID& startColID)
  * pos begins from 1
  *
  */
-Status Chunk::getSO(ID& subjectID,ID& objectID, ID pos)
-{
-	if( pos > (colEnd - colStart + 1))
+Status Chunk::getSO(ID &subjectID, ID &objectID, ID pos) {
+	if (pos > (colEnd - colStart + 1))
 		return ERROR;
 	unsigned char xLen, yLen;
-	ID x = 0,y = 0;
+	ID x = 0, y = 0;
 
-	char* p = startPtr + (pos - 1) * Type_2_Length(this->type);
-	Type_2_Length(type,xLen,yLen);
+	char *p = startPtr + (pos - 1) * Type_2_Length(this->type);
+	Type_2_Length(type, xLen, yLen);
 
-	memcpy(&x,p,xLen);
+	memcpy(&x, p, xLen);
 	p = p + xLen;
-	memcpy(&y,p,yLen);
+	memcpy(&y, p, yLen);
 
 	bool flag = flagVector->getValue(pos);
 
 //	bool flag = flagVector[pos-1];
 
-	if(flag == true){
-		subjectID = x+y;
+	if (flag == true) {
+		subjectID = x + y;
 		objectID = x;
-	}else{
-		objectID = x+y;
+	} else {
+		objectID = x + y;
 		subjectID = x;
 	}
 
 	return OK;
 }
 
-static inline unsigned int readUInt(const uchar* reader) {
-	return (reader[0]<<24 | reader[1] << 16 | reader[2] << 8 | reader[3]);
+static inline unsigned int readUInt(const uchar *reader) {
+	return (reader[0] << 24 | reader[1] << 16 | reader[2] << 8 | reader[3]);
 }
 
-const uchar* Chunk::readXId(const uchar* reader, register ID& id) {
+const uchar *Chunk::readXId(const uchar *reader, register ID &id) {
 #ifdef WORD_ALIGN
 	id = 0;
 	register unsigned int c = *((unsigned int*)reader);
@@ -1006,7 +1035,7 @@ const uchar* Chunk::readXId(const uchar* reader, register ID& id) {
 #endif /* end for WORD_ALIGN */
 }
 
-const uchar* Chunk::readYId(const uchar* reader, register ID& id) {
+const uchar *Chunk::readYId(const uchar *reader, register ID &id) {
 // Read an y id
 #ifdef WORD_ALIGN
 	id = 0;
@@ -1079,27 +1108,27 @@ const uchar* Chunk::readYId(const uchar* reader, register ID& id) {
 #endif /* END FOR WORD_ALIGN */
 }
 
-const uchar* Chunk::skipId(const uchar* reader, unsigned char flag) {
+const uchar *Chunk::skipId(const uchar *reader, unsigned char flag) {
 // Skip an id
-	if(flag == 1) {
+	if (flag == 1) {
 		while ((*reader) & 128)
 			++reader;
-	//	return reader;
+		//	return reader;
 	} else {
 		while (!((*reader) & 128))
 			++reader;
-	//	return reader;
+		//	return reader;
 	}
 
 	return reader;
 }
 
-const uchar* Chunk::skipForward(const uchar* reader) {
+const uchar *Chunk::skipForward(const uchar *reader) {
 // skip a x,y forward;
 	return skipId(skipId(reader, 0), 1);
 }
 
-const uchar* Chunk::skipBackward(const uchar* reader) {
+const uchar *Chunk::skipBackward(const uchar *reader) {
 // skip backward to the last x,y;
 	while ((*reader) == 0)
 		--reader;
@@ -1113,39 +1142,39 @@ const uchar* Chunk::skipBackward(const uchar* reader) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Status ChunkIndex::buildChunkIndex(unsigned chunkType) {
-	if(idTable == NULL) {
+	if (idTable == NULL) {
 		idTable = new MemoryBuffer(HASH_CAPACITY);
 		tableSize = idTable->getSize() / sizeof(unsigned);
 		offsetTable = new MemoryBuffer(HASH_CAPACITY);
-		idTableEntries = (ID*)idTable->getBuffer();
-		offsetTableEntries = (ID*)offsetTable->getBuffer();
+		idTableEntries = (ID *) idTable->getBuffer();
+		offsetTableEntries = (ID *) offsetTable->getBuffer();
 		tableSize = 0;
 	}
 
-	const uchar* begin, *limit, *reader;
-	ID x,y;
+	const uchar *begin, *limit, *reader;
+	ID x, y;
 
-	if(chunkType == 1) {
+	if (chunkType == 1) {
 		reader = chunkManager.getStartPtr(1);
 		begin = reader;
-		if(chunkManager.getStartPtr(chunkType) == chunkManager.getEndPtr(chunkType))
+		if (chunkManager.getStartPtr(chunkType) == chunkManager.getEndPtr(chunkType))
 			return OK;
 
 		x = 0;
 		reader = Chunk::readXId(reader, x);
 		insertEntries(x, 0);
 
-		reader = reader + (int)MemoryBuffer::pagesize;
+		reader = reader + (int) MemoryBuffer::pagesize;
 
 		limit = chunkManager.getEndPtr(1);
-		while(reader < limit) {
+		while (reader < limit) {
 			x = 0;
 			//const char* temp = this->backSkip(reader);
-			const uchar* temp = Chunk::skipBackward(reader);
+			const uchar *temp = Chunk::skipBackward(reader);
 			Chunk::readXId(temp, x);
 			insertEntries(x, temp - begin);
 
-			reader = reader + (int)MemoryBuffer::pagesize;
+			reader = reader + (int) MemoryBuffer::pagesize;
 		}
 
 		//reader = backSkip(limit);
@@ -1155,30 +1184,32 @@ Status ChunkIndex::buildChunkIndex(unsigned chunkType) {
 		insertEntries(x, reader - begin);
 	}
 
-	if(chunkType == 2) {
+	if (chunkType == 2) {
 		reader = chunkManager.getStartPtr(2);
 		begin = reader;
-		if(chunkManager.getStartPtr(chunkType) == chunkManager.getEndPtr(chunkType))
+		if (chunkManager.getStartPtr(chunkType) == chunkManager.getEndPtr(chunkType))
 			return OK;
 
-		x = 0; y = 0;
+		x = 0;
+		y = 0;
 		Chunk::readYId(Chunk::readXId(reader, x), y);
 		insertEntries(x + y, 0);
 
-		reader = reader + (int)MemoryBuffer::pagesize;
+		reader = reader + (int) MemoryBuffer::pagesize;
 
 		limit = chunkManager.getEndPtr(2);
-		while(reader < limit) {
-			x = 0; y = 0;
+		while (reader < limit) {
+			x = 0;
+			y = 0;
 			//const char* temp = this->backSkip(reader);
-			const uchar* temp = Chunk::skipBackward(reader);
+			const uchar *temp = Chunk::skipBackward(reader);
 			Chunk::readYId(Chunk::readXId(temp, x), y);
 			insertEntries(x + y, temp - begin);
 
-			reader = reader + (int)MemoryBuffer::pagesize;
+			reader = reader + (int) MemoryBuffer::pagesize;
 		}
 
-		x= y = 0;
+		x = y = 0;
 		//reader = backSkip(limit);
 		reader = Chunk::skipBackward(limit);
 		Chunk::readYId(Chunk::readXId(reader, x), y);
@@ -1188,13 +1219,12 @@ Status ChunkIndex::buildChunkIndex(unsigned chunkType) {
 	return OK;
 }
 
-void ChunkIndex::insertEntries(ID id, unsigned offset)
-{
-	if(isBufferFull() == true) {
+void ChunkIndex::insertEntries(ID id, unsigned offset) {
+	if (isBufferFull() == true) {
 		idTable->resize(HASH_CAPACITY);
-		idTableEntries = (ID*)idTable->get_address();
+		idTableEntries = (ID *) idTable->get_address();
 		offsetTable->resize(HASH_CAPACITY);
-		offsetTableEntries = (ID*)offsetTable->get_address();
+		offsetTableEntries = (ID *) offsetTable->get_address();
 	}
 	idTableEntries[tableSize] = id;
 	offsetTableEntries[tableSize] = offset;
@@ -1202,15 +1232,14 @@ void ChunkIndex::insertEntries(ID id, unsigned offset)
 	tableSize++;
 }
 
-const char* ChunkIndex::backSkip(const char* reader)
-{
-	if((*reinterpret_cast<const unsigned char*> (reader)) & 128 ) { //encounter y;
-		while ((*reinterpret_cast<const unsigned char*> (reader)) & 128)
+const char *ChunkIndex::backSkip(const char *reader) {
+	if ((*reinterpret_cast<const unsigned char *> (reader)) & 128) { //encounter y;
+		while ((*reinterpret_cast<const unsigned char *> (reader)) & 128)
 			--reader;
-		while (!((*reinterpret_cast<const unsigned char*> (reader)) & 128))
+		while (!((*reinterpret_cast<const unsigned char *> (reader)) & 128))
 			--reader;
 	} else { //encounter x;
-		while (!((*reinterpret_cast<const unsigned char*> (reader)) & 128))
+		while (!((*reinterpret_cast<const unsigned char *> (reader)) & 128))
 			--reader;
 	}
 
@@ -1261,11 +1290,11 @@ int ChunkIndex::searchChunk(ID id) {
 
 }
 
-Status ChunkIndex::getOffsetById(ID id, unsigned int& offset, unsigned int typeID) {
+Status ChunkIndex::getOffsetById(ID id, unsigned int &offset, unsigned int typeID) {
 	int offsetId = this->searchChunk(id);
-	if(offsetId == -1) {
+	if (offsetId == -1) {
 		//cout<<"id: "<<id<<endl;
-		if(tableSize > 0 && id > idTableEntries[tableSize - 1]) {
+		if (tableSize > 0 && id > idTableEntries[tableSize - 1]) {
 			return NOT_FOUND;
 		} else {
 			offset = 0;
@@ -1281,7 +1310,7 @@ Status ChunkIndex::getOffsetById(ID id, unsigned int& offset, unsigned int typeI
 	unsigned pBegin = offsetTableEntries[offsetId];
 	unsigned pEnd = offsetTableEntries[offsetId + 1];
 
-	const uchar* beginPtr = NULL, *reader = NULL;
+	const uchar *beginPtr = NULL, *reader = NULL;
 	int low, high, mid = 0, lastmid = 0;
 	ID x, y;
 
@@ -1320,7 +1349,7 @@ Status ChunkIndex::getOffsetById(ID id, unsigned int& offset, unsigned int typeI
 		while (low <= high) {
 			x = 0;
 			mid = low + (high - low) / 2;
-			if(lastmid == mid)
+			if (lastmid == mid)
 				break;
 			lastmid = mid;
 			reader = Chunk::skipBackward(beginPtr + mid);
@@ -1386,18 +1415,18 @@ Status ChunkIndex::getOffsetById(ID id, unsigned int& offset, unsigned int typeI
 			mid = (low + high) / 2;
 			reader = Chunk::skipBackward(beginPtr + mid);
 			mid = reader - beginPtr;
-			if(lastmid == mid)
+			if (lastmid == mid)
 				break;
 			lastmid = mid;
 			reader = Chunk::readXId(reader, x);
 			reader = Chunk::readYId(reader, y);
 			if (x + y == id) {
 				lastmid = mid;
-				while(mid > 0) {
+				while (mid > 0) {
 					//x = y = 0;
 					reader = Chunk::skipBackward(beginPtr + mid);
 					Chunk::readYId(Chunk::readXId(reader, x), y);
-					if(x + y < id) {
+					if (x + y < id) {
 						offset = lastmid;
 						return OK;
 					}
@@ -1427,23 +1456,23 @@ bool ChunkIndex::isBufferFull() {
 	return tableSize >= idTable->getSize() / 4;
 }
 
-Status ChunkIndex::save(MMapBuffer*& indexBuffer)
-{
-	char* writeBuf;
+Status ChunkIndex::save(MMapBuffer *&indexBuffer) {
+	char *writeBuf;
 
-	if(indexBuffer == NULL) {
-		indexBuffer = MMapBuffer::create(string(string(DATABASE_PATH) + "/BitmapBuffer_index").c_str(), tableSize * 4 * 2 + 4);
+	if (indexBuffer == NULL) {
+		indexBuffer = MMapBuffer::create(string(string(DATABASE_PATH) + "/BitmapBuffer_index").c_str(),
+		                                 tableSize * 4 * 2 + 4);
 		writeBuf = indexBuffer->get_address();
 	} else {
 		size_t size = indexBuffer->getSize();
 		writeBuf = indexBuffer->resize(tableSize * 4 * 2 + 4) + size;
 	}
 
-	*(ID*)writeBuf = tableSize;
+	*(ID *) writeBuf = tableSize;
 	writeBuf = writeBuf + 4;
-	memcpy(writeBuf, (char*)idTableEntries, tableSize * 4);
+	memcpy(writeBuf, (char *) idTableEntries, tableSize * 4);
 	writeBuf = writeBuf + tableSize * 4;
-	memcpy(writeBuf, (char*)offsetTableEntries, tableSize * 4);
+	memcpy(writeBuf, (char *) offsetTableEntries, tableSize * 4);
 
 	indexBuffer->flush();
 	delete idTable;
@@ -1454,13 +1483,12 @@ Status ChunkIndex::save(MMapBuffer*& indexBuffer)
 	return OK;
 }
 
-ChunkIndex* ChunkIndex::load(ChunkManager& manager, IndexType indexType, char* buffer, size_t& offset)
-{
-	ChunkIndex* index = new ChunkIndex(manager, indexType);
-	char* base = buffer + offset;
-	index->tableSize = *((ID*)base);
-	index->idTableEntries = (ID*)(base + 4);
-	index->offsetTableEntries = (ID*)(index->idTableEntries + index->tableSize);
+ChunkIndex *ChunkIndex::load(ChunkManager &manager, IndexType indexType, char *buffer, size_t &offset) {
+	ChunkIndex *index = new ChunkIndex(manager, indexType);
+	char *base = buffer + offset;
+	index->tableSize = *((ID *) base);
+	index->idTableEntries = (ID *) (base + 4);
+	index->offsetTableEntries = (ID *) (index->idTableEntries + index->tableSize);
 	offset = offset + 4 + 4 * 2 * index->tableSize;
 
 	return index;

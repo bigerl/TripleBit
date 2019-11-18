@@ -21,8 +21,7 @@
 
 #include <sys/time.h>
 
-RDFQuery::RDFQuery(TripleBitQuery* _bitmapQuery, TripleBitRepository* _repo)
-{
+RDFQuery::RDFQuery(TripleBitQuery *_bitmapQuery, TripleBitRepository *_repo) {
 	this->bitmapQuery = _bitmapQuery;
 	repo = _repo;
 	this->queryGraph = new TripleBitQueryGraph();
@@ -33,56 +32,64 @@ RDFQuery::RDFQuery(TripleBitQuery* _bitmapQuery, TripleBitRepository* _repo)
 RDFQuery::~RDFQuery() {
 	// TODO Auto-generated destructor stub
 	//delete bitmapQuery;
-	if(repo != NULL)
+	if (repo != NULL)
 		delete repo;
 	repo = NULL;
-	if(queryGraph != NULL)
+	if (queryGraph != NULL)
 		delete queryGraph;
 	queryGraph = NULL;
-	if(planGen != NULL)
+	if (planGen != NULL)
 		delete planGen;
 	planGen = NULL;
-	if(semAnalysis != NULL)
+	if (semAnalysis != NULL)
 		delete semAnalysis;
 	semAnalysis = NULL;
 }
 
-Status RDFQuery::Execute(string& queryString, vector<string>& resultSet)
-{
+Status RDFQuery::Execute(string &queryString, vector<string> &resultSet) {
 	struct timeval start, end;
 
-	gettimeofday(&start,NULL);
+	gettimeofday(&start, NULL);
 
 	SPARQLLexer *lexer = new SPARQLLexer(queryString);
 	SPARQLParser *parser = new SPARQLParser(*lexer);
 	try {
 		parser->parse();
-	} catch (const SPARQLParser::ParserException& e) {
+	} catch (const SPARQLParser::ParserException &e) {
 		cerr << "parse error: " << e.message << endl;
 		return ERROR;
 	}
 
 	queryGraph->Clear();
 
-	if(!this->semAnalysis->transform(*parser,*queryGraph)) {
+	if (!this->semAnalysis->transform(*parser, *queryGraph)) {
 		return NOT_FOUND;
 	}
 
-	if(queryGraph->knownEmpty() == true) {
-		cerr<<"Empty result"<<endl;
+	if (queryGraph->knownEmpty() == true) {
+		cerr << "Empty result" << endl;
 		return OK;
 	}
 
 	//cout<<"----------------------------After transform------------------------------------"<<endl;
 	//Print();
-	planGen->generatePlan(*queryGraph);
+	Status state_ = planGen->generatePlan(*queryGraph);
+	if (state_ != OK){
+		cerr << " QUERY FAILED " << std::endl;
+		return state_;
+	}
+
 	//cout<<"-----------------------------After Generate Plan-------------------------------"<<endl;
 	//Print();
 	//t.restart();
 	//bitmapQuery->releaseBuffer();
-	bitmapQuery->query(queryGraph, resultSet);
-	gettimeofday(&end,NULL);
-	cerr<<" time elapsed: "<<((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec ) / 1000000.0<<" s"<<endl;
+	state_ = bitmapQuery->query(queryGraph, resultSet);
+	if (state_ != OK){
+		cerr << " QUERY FAILED " << std::endl;
+		return state_;
+	}
+	gettimeofday(&end, NULL);
+	cerr << " QUERY SUCCEEDED " << endl;
 	//cout<<"time elapsed: "<<t.elapsed()<<endl;
 	queryGraph->Clear();
 	delete lexer;
@@ -90,76 +97,68 @@ Status RDFQuery::Execute(string& queryString, vector<string>& resultSet)
 	return OK;
 }
 
-void RDFQuery::Print()
-{
-	TripleBitQueryGraph::SubQuery& query = queryGraph->getQuery();
+void RDFQuery::Print() {
+	TripleBitQueryGraph::SubQuery &query = queryGraph->getQuery();
 	unsigned int i, size, j;
 	size = query.tripleNodes.size();
-	cout<<"join triple size: "<<size<<endl;
+	cout << "join triple size: " << size << endl;
 
-	vector<TripleBitQueryGraph::TripleNode>& triples = query.tripleNodes;
-	for ( i = 0; i < size; i++)
-	{
-		cout<<i<<" triple: "<<endl;
-		cout<<triples[i].constSubject<<" "<<triples[i].subject<<endl;
-		cout<<triples[i].constPredicate<<" "<<triples[i].predicate<<endl;
-		cout<<triples[i].constObject<<" "<<triples[i].object<<endl;
-		cout<<endl;
+	vector<TripleBitQueryGraph::TripleNode> &triples = query.tripleNodes;
+	for (i = 0; i < size; i++) {
+		cout << i << " triple: " << endl;
+		cout << triples[i].constSubject << " " << triples[i].subject << endl;
+		cout << triples[i].constPredicate << " " << triples[i].predicate << endl;
+		cout << triples[i].constObject << " " << triples[i].object << endl;
+		cout << endl;
 	}
 
 	size = query.joinVariables.size();
-	cout<<"join variable size: "<<size<<endl;
-	vector<TripleBitQueryGraph::JoinVariableNodeID>& variables = query.joinVariables;
+	cout << "join variable size: " << size << endl;
+	vector<TripleBitQueryGraph::JoinVariableNodeID> &variables = query.joinVariables;
 
-	for( i = 0 ; i < size; i++)
-	{
-		cout<<variables[i]<<endl;
+	for (i = 0; i < size; i++) {
+		cout << variables[i] << endl;
 	}
 
-	vector<TripleBitQueryGraph::JoinVariableNode>& nodes = query.joinVariableNodes;
+	vector<TripleBitQueryGraph::JoinVariableNode> &nodes = query.joinVariableNodes;
 
 	size = nodes.size();
-	cout<<"Join variable nodes size: "<<size<<endl;
-	for( i = 0; i < size; i++)
-	{
-		cout<<i <<" vairable node"<<endl;
-		cout<<nodes[i].value<<endl;
-		for ( j = 0; j < nodes[i].appear_tpnodes.size(); j++ )
-		{
-			cout<<nodes[i].appear_tpnodes[j].first<<" "<<nodes[i].appear_tpnodes[j].second<<endl;
+	cout << "Join variable nodes size: " << size << endl;
+	for (i = 0; i < size; i++) {
+		cout << i << " vairable node" << endl;
+		cout << nodes[i].value << endl;
+		for (j = 0; j < nodes[i].appear_tpnodes.size(); j++) {
+			cout << nodes[i].appear_tpnodes[j].first << " " << nodes[i].appear_tpnodes[j].second << endl;
 		}
-		cout<<endl;
+		cout << endl;
 	}
 
 	size = query.joinVariableEdges.size();
-	cout<<"join variable edges size: "<<size<<endl;
-	vector<TripleBitQueryGraph::JoinVariableNodesEdge>& edge = query.joinVariableEdges;
-	for( i = 0; i < size; i++)
-	{
-		cout<<i<<" edge"<<endl;
-		cout<<"From: "<<edge[i].from<<" To: "<<edge[i].to<<endl;
+	cout << "join variable edges size: " << size << endl;
+	vector<TripleBitQueryGraph::JoinVariableNodesEdge> &edge = query.joinVariableEdges;
+	for (i = 0; i < size; i++) {
+		cout << i << " edge" << endl;
+		cout << "From: " << edge[i].from << " To: " << edge[i].to << endl;
 	}
 
-	cout<<" query type: "<<query.joinGraph<<endl;
+	cout << " query type: " << query.joinGraph << endl;
 
-	cout<<" root ID: "<<query.rootID<<endl;
+	cout << " root ID: " << query.rootID << endl;
 
-	cout<<" query leafs: ";
+	cout << " query leafs: ";
 	size = query.leafNodes.size();
-	for( i = 0 ; i < size; i++)
-	{
-		cout<<query.leafNodes[i]<<" ";
+	for (i = 0; i < size; i++) {
+		cout << query.leafNodes[i] << " ";
 	}
 
-	cout<<endl;
+	cout << endl;
 
-	vector<ID>& projection = queryGraph->getProjection();
+	vector<ID> &projection = queryGraph->getProjection();
 
-	cout<<"variables need to project: "<<endl;
-	cout<<"variable count: "<<projection.size()<<endl;
-	for( i = 0; i < projection.size(); i++)
-	{
-		cout<<projection[i]<<endl;
+	cout << "variables need to project: " << endl;
+	cout << "variable count: " << projection.size() << endl;
+	for (i = 0; i < projection.size(); i++) {
+		cout << projection[i] << endl;
 	}
-	cout<<endl;
+	cout << endl;
 }

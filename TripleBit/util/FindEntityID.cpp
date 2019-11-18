@@ -21,47 +21,46 @@
 #include "../HashIndex.h"
 #include "../StatisticsBuffer.h"
 
-FindEntityID::FindEntityID(TripleBitRepository* repo) {
+FindEntityID::FindEntityID(TripleBitRepository *repo) {
 	// TODO Auto-generated constructor stub
 	bitmap = repo->getBitmapBuffer();
 	UriTable = repo->getURITable();
 	preTable = repo->getPredicateTable();
-	spStatBuffer = (TwoConstantStatisticsBuffer*)repo->getStatisticsBuffer(StatisticsBuffer::SUBJECTPREDICATE_STATIS);
-	opStatBuffer = (TwoConstantStatisticsBuffer*)repo->getStatisticsBuffer(StatisticsBuffer::OBJECTPREDICATE_STATIS);
-	sStatBuffer = (OneConstantStatisticsBuffer*)repo->getStatisticsBuffer(StatisticsBuffer::SUBJECT_STATIS);
-	oStatBuffer = (OneConstantStatisticsBuffer*)repo->getStatisticsBuffer(StatisticsBuffer::OBJECT_STATIS);
+	spStatBuffer = (TwoConstantStatisticsBuffer *) repo->getStatisticsBuffer(StatisticsBuffer::SUBJECTPREDICATE_STATIS);
+	opStatBuffer = (TwoConstantStatisticsBuffer *) repo->getStatisticsBuffer(StatisticsBuffer::OBJECTPREDICATE_STATIS);
+	sStatBuffer = (OneConstantStatisticsBuffer *) repo->getStatisticsBuffer(StatisticsBuffer::SUBJECT_STATIS);
+	oStatBuffer = (OneConstantStatisticsBuffer *) repo->getStatisticsBuffer(StatisticsBuffer::OBJECT_STATIS);
 
 	XTemp = new EntityIDBuffer();
 	XYTemp = new EntityIDBuffer();
 	tempBuffer1 = new EntityIDBuffer();
 	tempBuffer2 = new EntityIDBuffer();
-	pthread_mutex_init(&mergeBufferMutex,NULL);
+	pthread_mutex_init(&mergeBufferMutex, NULL);
 }
 
 FindEntityID::~FindEntityID() {
 	// TODO Auto-generated destructor stub
-	if(XTemp != NULL)
+	if (XTemp != NULL)
 		delete XTemp;
 	XTemp = NULL;
 
-	if(XYTemp != NULL)
+	if (XYTemp != NULL)
 		delete XYTemp;
 	XYTemp = NULL;
 
-	if(tempBuffer1 != NULL)
+	if (tempBuffer1 != NULL)
 		delete tempBuffer1;
 	tempBuffer1 = NULL;
 
-	if(tempBuffer2 != NULL)
+	if (tempBuffer2 != NULL)
 		delete tempBuffer2;
 	tempBuffer2 = NULL;
 
 	pthread_mutex_destroy(&mergeBufferMutex);
 }
 
-Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
-	if(minID == 0 && maxID == UINT_MAX)
+Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer, ID minID, ID maxID) {
+	if (minID == 0 && maxID == UINT_MAX)
 		return this->findSubjectIDByPredicate(predicateID, buffer);
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
@@ -79,20 +78,20 @@ Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer* bu
 
 	register ID x, y;
 	register ID key;
-	const uchar* startPtr, *limit, *reader;
+	const uchar *startPtr, *limit, *reader;
 
 	unsigned offset;
 	Status s = bitmap->getChunkManager(predicateID, 0)->getChunkPosByID(minID, 1, offset);
-	if(s == OK) {
-		startPtr =  bitmap->getChunkManager(predicateID, 0)->getStartPtr(1) + offset;
+	if (s == OK) {
+		startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
 		reader = startPtr;
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x < minID) {
+			if (x < minID) {
 				continue;
-			} else if( x <= maxID ) {
+			} else if (x <= maxID) {
 				XTemp->insertID(x);
 			} else {
 				break;
@@ -102,17 +101,17 @@ Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer* bu
 	}
 
 	s = bitmap->getChunkManager(predicateID, 0)->getChunkPosByID(minID, 2, offset);
-	if(s == OK) {
-		startPtr =  bitmap->getChunkManager(predicateID, 0)->getStartPtr(2) + offset;
+	if (s == OK) {
+		startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(2) + offset;
 		limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(2);
 		reader = startPtr;
 		for (; reader < limit;) {
 			reader = Chunk::readXId(reader, x);
 			reader = Chunk::readYId(reader, y);
 			key = x + y;
-			if(key < minID) {
+			if (key < minID) {
 				continue;
-			} else if( key <= maxID) {
+			} else if (key <= maxID) {
 				XYTemp->insertID(key);
 			} else {
 				break;
@@ -125,8 +124,7 @@ Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer* bu
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout << __FUNCTION__ << endl;
 #endif
@@ -142,7 +140,7 @@ Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer* bu
 	XYTemp->setSortKey(0);
 
 	register ID x, y;
-	const uchar* startPtr, *limit, *reader;
+	const uchar *startPtr, *limit, *reader;
 
 	startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1);
 	limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
@@ -167,8 +165,7 @@ Status FindEntityID::findSubjectIDByPredicate(ID predicateID, EntityIDBuffer* bu
 	return OK;
 }
 
-Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
@@ -184,11 +181,11 @@ Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityI
 	XYTemp->setSortKey(0);
 
 	register ID x, y;
-	const uchar* startPtr, *limit;
+	const uchar *startPtr, *limit;
 
 	startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(1);
 	limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(1);
-	for (;startPtr < limit;) {
+	for (; startPtr < limit;) {
 		startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 		XTemp->insertID(x);
 		XTemp->insertID(x + y);
@@ -196,7 +193,7 @@ Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityI
 
 	startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(2);
 	limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(2);
-	for (; startPtr < limit; ) {
+	for (; startPtr < limit;) {
 		startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 		XYTemp->insertID(x + y);
 		XYTemp->insertID(x);
@@ -206,8 +203,7 @@ Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityI
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
@@ -223,11 +219,11 @@ Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityI
 	XYTemp->setSortKey(0);
 
 	register ID x, y;
-	const uchar* startPtr, *limit;
+	const uchar *startPtr, *limit;
 
 	startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1);
 	limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
-	for (;startPtr < limit;) {
+	for (; startPtr < limit;) {
 		startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 		XTemp->insertID(x);
 		XTemp->insertID(x + y);
@@ -235,7 +231,7 @@ Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityI
 	startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(2);
 	limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(2);
 
-	for (; startPtr < limit; ) {
+	for (; startPtr < limit;) {
 		startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 		XYTemp->insertID(x + y);
 		XYTemp->insertID(x);
@@ -246,9 +242,8 @@ Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityI
 	return OK;
 }
 
-Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
-	if(minID == 0 && maxID == UINT_MAX)
+Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer, ID minID, ID maxID) {
+	if (minID == 0 && maxID == UINT_MAX)
 		return this->findObjectIDByPredicate(predicateID, buffer);
 	XTemp->empty();
 	XYTemp->empty();
@@ -262,7 +257,7 @@ Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer* buf
 	XYTemp->setSortKey(0);
 
 	register ID x, y;
-	const uchar* startPtr, *limit;
+	const uchar *startPtr, *limit;
 
 	unsigned offset;
 
@@ -301,8 +296,7 @@ Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer* buf
 	return OK;
 }
 
-Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer) {
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 	XTemp->empty();
@@ -314,7 +308,7 @@ Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer* buf
 	XYTemp->setSortKey(0);
 
 	register ID x, y;
-	const uchar* startPtr, *limit;
+	const uchar *startPtr, *limit;
 
 	startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(1);
 	limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(1);
@@ -339,16 +333,15 @@ Status FindEntityID::findObjectIDByPredicate(ID predicateID, EntityIDBuffer* buf
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	Status s;
 	register ID x, y;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -365,10 +358,10 @@ Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID object
 		startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(1);
 
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != objectID)
+			if (x != objectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			XYTemp->insertID(x + y);
@@ -382,7 +375,7 @@ Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID object
 
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
-			if(x + y != objectID)
+			if (x + y != objectID)
 				break;
 			XTemp->insertID(x);
 		}
@@ -394,17 +387,17 @@ Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID object
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer *buffer, ID minID,
+                                                       ID maxID) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	Status s;
 	register ID x, y;
 	register ID key;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -421,16 +414,16 @@ Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID object
 		startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(1);
 
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != objectID)
+			if (x != objectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			key = x + y;
-			if(key < minID) {
+			if (key < minID) {
 				continue;
-			}else if (key <= maxID) {
+			} else if (key <= maxID) {
 				XYTemp->insertID(key);
 			} else if (key > maxID) {
 				break;
@@ -445,9 +438,9 @@ Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID object
 
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
-			if(x + y != objectID)
+			if (x + y != objectID)
 				break;
-			if(x < minID) {
+			if (x < minID) {
 				continue;
 			} else if (x <= maxID) {
 				XTemp->insertID(x);
@@ -463,12 +456,12 @@ Status FindEntityID::findSubjectIDByPredicateAndObject(ID predicateID, ID object
 	return OK;
 }
 
-Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer *buffer, ID minID,
+                                                       ID maxID) {
 	register ID x, y, key;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -492,14 +485,14 @@ Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjec
 	if (s == OK) {
 		startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != subjectID)
+			if (x != subjectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			key = x + y;
-			if (key <  minID) {
+			if (key < minID) {
 				continue;
 			} else if (key <= maxID) {
 				XYTemp->insertID(x + y);
@@ -517,11 +510,11 @@ Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjec
 
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
-			if(x + y != subjectID)
+			if (x + y != subjectID)
 				break;
 			if (x < minID) {
 				continue;
-			} else if ( x <= maxID) {
+			} else if (x <= maxID) {
 				XTemp->insertID(x);
 			} else {
 				break;
@@ -535,12 +528,11 @@ Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjec
 	return OK;
 }
 
-Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer *buffer) {
 	register ID x, y;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -564,10 +556,10 @@ Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjec
 	if (s == OK) {
 		startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != subjectID)
+			if (x != subjectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			XYTemp->insertID(x + y);
@@ -582,7 +574,7 @@ Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjec
 
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
-			if(x + y != subjectID)
+			if (x + y != subjectID)
 				break;
 			XTemp->insertID(x);
 		}
@@ -594,9 +586,9 @@ Status FindEntityID::findObjectIDByPredicateAndSubject(ID predicateID, ID subjec
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer, ID min, ID max,unsigned maxNum)
-{
-	if(min == 0 && max == UINT_MAX)
+Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer, ID min, ID max,
+                                                         unsigned maxNum) {
+	if (min == 0 && max == UINT_MAX)
 		return this->findSubjectIDAndObjectIDByPredicate(predicateID, buffer);
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
@@ -613,7 +605,7 @@ Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityI
 	buffer->setSortKey(0);
 
 	register ID x, y;
-	const uchar* startPtr, *limit;
+	const uchar *startPtr, *limit;
 
 	unsigned int typeIDMin;
 	unsigned offsetMin;
@@ -628,7 +620,7 @@ Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityI
 	if (s == OK) {
 		startPtr = manager->getStartPtr(1) + offsetMin;
 		limit = manager->getEndPtr(1);
-		for (; startPtr < limit; ) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 			if (x > max)
 				goto END;
@@ -636,20 +628,20 @@ Status FindEntityID::findSubjectIDAndObjectIDByPredicate(ID predicateID, EntityI
 			startPtr = Chunk::readYId(startPtr, y);
 			XTemp->insertID(x);
 			XTemp->insertID(x + y);
-			if(XTemp->getSize() > maxNum){
+			if (XTemp->getSize() > maxNum) {
 				return TOO_MUCH;
 			}
 		}
 	}
 
-END:
+	END:
 	typeIDMin = 2;
 
 	s = manager->getChunkPosByID(min, typeIDMin, offsetMin);
 	if (s == OK) {
 		startPtr = manager->getStartPtr(2) + offsetMin;
 		limit = manager->getEndPtr(2);
-		for (; startPtr < limit; ) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 			if (x + y > max)
 				goto END1;
@@ -661,15 +653,15 @@ END:
 			}
 		}
 	}
-END1:
+	END1:
 	buffer->mergeBuffer(XTemp, XYTemp);
 
 	return OK;
 }
 
-Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityIDBuffer* buffer, ID minID, ID maxID, unsigned maxNum)
-{
-	if(minID == 0 && maxID == UINT_MAX)
+Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityIDBuffer *buffer, ID minID, ID maxID,
+                                                         unsigned maxNum) {
+	if (minID == 0 && maxID == UINT_MAX)
 		return this->findObjectIDAndSubjectIDByPredicate(predicateID, buffer);
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
@@ -686,7 +678,7 @@ Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityI
 	buffer->setSortKey(0);
 
 	register ID x, y;
-	const uchar* startPtr, *limit;
+	const uchar *startPtr, *limit;
 
 	unsigned int typeIDMin;
 	unsigned offsetMin;
@@ -701,20 +693,20 @@ Status FindEntityID::findObjectIDAndSubjectIDByPredicate(ID predicateID, EntityI
 	if (s == OK) {
 		startPtr = manager->getStartPtr(1) + offsetMin;
 		limit = manager->getEndPtr(1);
-		for (; startPtr < limit; ) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 			if (x > maxID)
 				goto END;
 			startPtr = Chunk::readYId(startPtr, y);
 			XTemp->insertID(x);
 			XTemp->insertID(x + y);
-			if(XTemp->getSize() > maxNum){
-                return TOO_MUCH;
-            }
+			if (XTemp->getSize() > maxNum) {
+				return TOO_MUCH;
+			}
 		}
 	}
 
-END:
+	END:
 	typeIDMin = 2;
 
 	s = manager->getChunkPosByID(minID, typeIDMin, offsetMin);
@@ -722,7 +714,7 @@ END:
 		startPtr = manager->getStartPtr(2) + offsetMin;
 		limit = manager->getEndPtr(2);
 
-		for (; startPtr < limit; ) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 			if (x + y > maxID)
 				goto END1;
@@ -730,26 +722,26 @@ END:
 			XYTemp->insertID(x + y);
 			XYTemp->insertID(x);
 			if (XYTemp->getSize() > maxNum) {
-                return TOO_MUCH;
-            }
+				return TOO_MUCH;
+			}
 		}
 	}
-END1:
+	END1:
 	buffer->mergeBuffer(XTemp, XYTemp);
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer* buffer)
-{
+Status
+FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	Status s;
 	register ID x, y;
 	register ID key;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -766,10 +758,10 @@ Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicat
 		startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(1);
 
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != objectID)
+			if (x != objectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			key = x + y;
@@ -786,7 +778,7 @@ Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicat
 
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
-			if(x + y != objectID)
+			if (x + y != objectID)
 				break;
 			XTemp->insertID(x);
 			XTemp->insertID(predicateID);
@@ -799,17 +791,18 @@ Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicat
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status
+FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer *buffer,
+                                                              ID minID, ID maxID) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	Status s;
 	register ID x, y;
 	register ID key;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -826,16 +819,16 @@ Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicat
 		startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(1);
 
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != objectID)
+			if (x != objectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			key = x + y;
-			if(key < minID) {
+			if (key < minID) {
 				continue;
-			}else if (key <= maxID) {
+			} else if (key <= maxID) {
 				XYTemp->insertID(key);
 				XYTemp->insertID(predicateID);
 			} else if (key > maxID) {
@@ -852,9 +845,9 @@ Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicat
 
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
-			if(x + y != objectID)
+			if (x + y != objectID)
 				break;
-			if(x < minID) {
+			if (x < minID) {
 				continue;
 			} else if (x <= maxID) {
 				XTemp->insertID(x);
@@ -871,17 +864,17 @@ Status FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObject(ID predicat
 	return OK;
 }
 
-Status FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer* buffer)
-{
+Status
+FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObject(ID predicateID, ID objectID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	Status s;
 	register ID x, y;
 	register ID key;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -898,10 +891,10 @@ Status FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObject(ID predicat
 		startPtr = bitmap->getChunkManager(predicateID, 1)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 1)->getEndPtr(1);
 
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != objectID)
+			if (x != objectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			key = x + y;
@@ -918,7 +911,7 @@ Status FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObject(ID predicat
 
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
-			if(x + y != objectID)
+			if (x + y != objectID)
 				break;
 			XTemp->insertID(predicateID);
 			XTemp->insertID(x);
@@ -931,15 +924,15 @@ Status FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObject(ID predicat
 	return OK;
 }
 
-Status FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer* buffer)
-{
+Status
+FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	register ID x, y;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -959,10 +952,10 @@ Status FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubject(ID predicat
 	if (s == OK) {
 		startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != subjectID)
+			if (x != subjectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			XYTemp->insertID(predicateID);
@@ -980,7 +973,7 @@ Status FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubject(ID predicat
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 
-			if(x + y != subjectID)
+			if (x + y != subjectID)
 				break;
 			XTemp->insertID(predicateID);
 			XTemp->insertID(x);
@@ -993,15 +986,15 @@ Status FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubject(ID predicat
 	return OK;
 }
 
-Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer* buffer)
-{
+Status
+FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer *buffer) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	register ID x, y;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -1021,10 +1014,10 @@ Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicat
 	if (s == OK) {
 		startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != subjectID)
+			if (x != subjectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			XYTemp->insertID(x + y);
@@ -1042,7 +1035,7 @@ Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicat
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 
-			if(x + y != subjectID)
+			if (x + y != subjectID)
 				break;
 			XTemp->insertID(x);
 			XTemp->insertID(predicateID);
@@ -1055,15 +1048,16 @@ Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicat
 	return OK;
 }
 
-Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status
+FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicateID, ID subjectID, EntityIDBuffer *buffer,
+                                                              ID minID, ID maxID) {
 #ifdef DEBUG
 	cout<<__FUNCTION__<<endl;
 #endif
 	register ID x, y, key;
-	const uchar* startPtr, *limit;
-	EntityIDBuffer* XTemp = new EntityIDBuffer();
-	EntityIDBuffer* XYTemp = new EntityIDBuffer();
+	const uchar *startPtr, *limit;
+	EntityIDBuffer *XTemp = new EntityIDBuffer();
+	EntityIDBuffer *XYTemp = new EntityIDBuffer();
 	XTemp->empty();
 	XYTemp->empty();
 
@@ -1083,16 +1077,16 @@ Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicat
 	if (s == OK) {
 		startPtr = bitmap->getChunkManager(predicateID, 0)->getStartPtr(1) + offset;
 		limit = bitmap->getChunkManager(predicateID, 0)->getEndPtr(1);
-		for(;startPtr < limit;) {
+		for (; startPtr < limit;) {
 			startPtr = Chunk::readXId(startPtr, x);
 
-			if(x != subjectID)
+			if (x != subjectID)
 				break;
 			startPtr = Chunk::readYId(startPtr, y);
 			key = x + y;
-			if(key < minID) {
+			if (key < minID) {
 				continue;
-			}else if (key <= maxID) {
+			} else if (key <= maxID) {
 				XYTemp->insertID(key);
 				XYTemp->insertID(predicateID);
 			} else if (key > maxID) {
@@ -1111,9 +1105,9 @@ Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicat
 		for (; startPtr < limit;) {
 			startPtr = Chunk::readYId(Chunk::readXId(startPtr, x), y);
 
-			if(x + y != subjectID)
+			if (x + y != subjectID)
 				break;
-			if(x < minID) {
+			if (x < minID) {
 				continue;
 			} else if (x <= maxID) {
 				XTemp->insertID(x);
@@ -1130,8 +1124,7 @@ Status FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubject(ID predicat
 	return OK;
 }
 
-void FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask(ID predicateID, ID objectID)
-{
+void FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask(ID predicateID, ID objectID) {
 	EntityIDBuffer *curBuffer = new EntityIDBuffer();
 	this->findSubjectIDAndPredicateIDByPredicateAndObject(predicateID, objectID, curBuffer);
 	if (curBuffer->getSize() > 0) {
@@ -1143,8 +1136,8 @@ void FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask(ID predic
 	delete curBuffer;
 }
 
-void FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask(ID predicateID, ID objectID, ID minID, ID maxID)
-{
+void
+FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask(ID predicateID, ID objectID, ID minID, ID maxID) {
 	EntityIDBuffer *curBuffer = new EntityIDBuffer();
 	this->findSubjectIDAndPredicateIDByPredicateAndObject(predicateID, objectID, curBuffer, minID, maxID);
 	if (curBuffer->getSize() > 0) {
@@ -1156,8 +1149,7 @@ void FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask(ID predic
 	delete curBuffer;
 }
 
-void FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObjectTask(ID predicateID, ID objectID)
-{
+void FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObjectTask(ID predicateID, ID objectID) {
 	EntityIDBuffer *curBuffer = new EntityIDBuffer();
 	this->findPredicateIDAndSubjectIDByPredicateAndObject(predicateID, objectID, curBuffer);
 	if (curBuffer->getSize() > 0) {
@@ -1169,8 +1161,7 @@ void FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObjectTask(ID predic
 	delete curBuffer;
 }
 
-void FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask(ID predicateID, ID subjectID)
-{
+void FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask(ID predicateID, ID subjectID) {
 	EntityIDBuffer *curBuffer = new EntityIDBuffer();
 	this->findObjectIDAndPredicateIDByPredicateAndSubject(predicateID, subjectID, curBuffer);
 	if (curBuffer->getSize() > 0) {
@@ -1182,8 +1173,8 @@ void FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask(ID predic
 	delete curBuffer;
 }
 
-void FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask(ID predicateID, ID subjectID, ID minID, ID maxID)
-{
+void
+FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask(ID predicateID, ID subjectID, ID minID, ID maxID) {
 	EntityIDBuffer *curBuffer = new EntityIDBuffer();
 	this->findObjectIDAndPredicateIDByPredicateAndSubject(predicateID, subjectID, curBuffer, minID, maxID);
 	if (curBuffer->getSize() > 0) {
@@ -1195,8 +1186,7 @@ void FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask(ID predic
 	delete curBuffer;
 }
 
-void FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubjectTask(ID predicateID, ID subjectID)
-{
+void FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubjectTask(ID predicateID, ID subjectID) {
 	EntityIDBuffer *curBuffer = new EntityIDBuffer();
 	this->findPredicateIDAndObjectIDByPredicateAndSubject(predicateID, subjectID, curBuffer);
 	if (curBuffer->getSize() > 0) {
@@ -1208,179 +1198,184 @@ void FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubjectTask(ID predic
 	delete curBuffer;
 }
 
-Status FindEntityID::findSubjectIDAndPredicateIDByObject(ID objectID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findSubjectIDAndPredicateIDByObject(ID objectID, EntityIDBuffer *buffer) {
 	EntityIDBuffer preBuffer;
 	opStatBuffer->getPredicatesByID(objectID, &preBuffer, 0, UINT_MAX);
 	size_t size = preBuffer.getSize(), i = 0;
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	buffer->setIDCount(2);
 	buffer->setSortKey(0);
 	tempBuffer2->setIDCount(2);
 	tempBuffer2->setSortKey(0);
 
-	do{
+	do {
 		this->findSubjectIDAndPredicateIDByPredicateAndObject(preBuffer[i], objectID, tempBuffer1);
 		i++;
-	}while(tempBuffer1->getSize() == 0 && i != size);
+	} while (tempBuffer1->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask,this,preBuffer[i], objectID));
+		CThreadPool::getInstance().AddTask(
+				boost::bind(&FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask, this, preBuffer[i],
+				            objectID));
 	}
 	CThreadPool::getInstance().Wait();
 
-	buffer->operator =(tempBuffer1);
+	buffer->operator=(tempBuffer1);
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDAndPredicateIDByObject(ID objectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
-	if(minID == 0 && maxID == UINT_MAX)
+Status FindEntityID::findSubjectIDAndPredicateIDByObject(ID objectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
+	if (minID == 0 && maxID == UINT_MAX)
 		return findSubjectIDAndPredicateIDByObject(objectID, buffer);
 
 	EntityIDBuffer preBuffer;
 	opStatBuffer->getPredicatesByID(objectID, &preBuffer, 0, UINT_MAX);
 	size_t size = preBuffer.getSize(), i = 0;
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	buffer->setIDCount(2);
 	buffer->setSortKey(0);
 	tempBuffer2->setIDCount(2);
 	tempBuffer2->setSortKey(0);
 
-	do{
+	do {
 		this->findSubjectIDAndPredicateIDByPredicateAndObject(preBuffer[i], objectID, tempBuffer1, minID, maxID);
 		i++;
-	}while(tempBuffer1->getSize() == 0 && i != size);
+	} while (tempBuffer1->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask,this,preBuffer[i], objectID, minID, maxID));
+		CThreadPool::getInstance().AddTask(
+				boost::bind(&FindEntityID::findSubjectIDAndPredicateIDByPredicateAndObjectTask, this, preBuffer[i],
+				            objectID, minID, maxID));
 	}
 	CThreadPool::getInstance().Wait();
 
-	buffer->operator =(tempBuffer1);
+	buffer->operator=(tempBuffer1);
 	return OK;
 }
 
-Status FindEntityID::findPredicateIDAndSubjectIDByObject(ID objectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findPredicateIDAndSubjectIDByObject(ID objectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
 	EntityIDBuffer preBuffer;
 	opStatBuffer->getPredicatesByID(objectID, &preBuffer, minID, maxID);
 	size_t size = preBuffer.getSize(), i = 0;
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	buffer->setIDCount(2);
 	buffer->setSortKey(0);
 	tempBuffer2->setIDCount(2);
 	tempBuffer2->setSortKey(0);
 
-	do{
+	do {
 		this->findPredicateIDAndSubjectIDByPredicateAndObject(preBuffer[i], objectID, tempBuffer1);
 		i++;
-	}while(tempBuffer1->getSize() == 0 && i != size);
+	} while (tempBuffer1->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObjectTask,this,preBuffer[i], objectID));
+		CThreadPool::getInstance().AddTask(
+				boost::bind(&FindEntityID::findPredicateIDAndSubjectIDByPredicateAndObjectTask, this, preBuffer[i],
+				            objectID));
 	}
 	CThreadPool::getInstance().Wait();
 
-	buffer->operator =(tempBuffer1);
+	buffer->operator=(tempBuffer1);
 	return OK;
 }
 
-Status FindEntityID::findObjectIDAndPredicateIDBySubject(ID subjectID, EntityIDBuffer *buffer)
-{
+Status FindEntityID::findObjectIDAndPredicateIDBySubject(ID subjectID, EntityIDBuffer *buffer) {
 	EntityIDBuffer preBuffer;
 	spStatBuffer->getPredicatesByID(subjectID, &preBuffer, 0, UINT_MAX);
 	size_t size = preBuffer.getSize(), i = 0;
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	buffer->setIDCount(2);
 	buffer->setSortKey(0);
 	tempBuffer2->setIDCount(2);
 	tempBuffer2->setSortKey(0);
 
-	do{
+	do {
 		this->findObjectIDAndPredicateIDByPredicateAndSubject(preBuffer[i], subjectID, tempBuffer1);
 		i++;
-	}while(tempBuffer1->getSize() == 0 && i != size);
+	} while (tempBuffer1->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask,this,preBuffer[i], subjectID));
+		CThreadPool::getInstance().AddTask(
+				boost::bind(&FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask, this, preBuffer[i],
+				            subjectID));
 	}
 	CThreadPool::getInstance().Wait();
 
-	buffer->operator =(tempBuffer1);
+	buffer->operator=(tempBuffer1);
 	return OK;
 }
 
-Status FindEntityID::findObjectIDAndPredicateIDBySubject(ID subjectID, EntityIDBuffer *buffer, ID minID, ID maxID)
-{
-	if(minID == 0 && maxID == UINT_MAX)
+Status FindEntityID::findObjectIDAndPredicateIDBySubject(ID subjectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
+	if (minID == 0 && maxID == UINT_MAX)
 		return findObjectIDAndPredicateIDBySubject(subjectID, buffer);
 
 	EntityIDBuffer preBuffer;
 	spStatBuffer->getPredicatesByID(subjectID, &preBuffer, 0, UINT_MAX);
 	size_t size = preBuffer.getSize(), i = 0;
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	buffer->setIDCount(2);
 	buffer->setSortKey(0);
 	tempBuffer2->setIDCount(2);
 	tempBuffer2->setSortKey(0);
 
-	do{
+	do {
 		this->findObjectIDAndPredicateIDByPredicateAndSubject(preBuffer[i], subjectID, tempBuffer1, minID, maxID);
 		i++;
-	}while(tempBuffer1->getSize() == 0 && i != size);
+	} while (tempBuffer1->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask,this,preBuffer[i], subjectID, minID, maxID));
+		CThreadPool::getInstance().AddTask(
+				boost::bind(&FindEntityID::findObjectIDAndPredicateIDByPredicateAndSubjectTask, this, preBuffer[i],
+				            subjectID, minID, maxID));
 	}
 	CThreadPool::getInstance().Wait();
 
-	buffer->operator =(tempBuffer1);
+	buffer->operator=(tempBuffer1);
 	return OK;
 }
 
-Status FindEntityID::findPredicateIDAndObjectIDBySubject(ID subjectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findPredicateIDAndObjectIDBySubject(ID subjectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
 	EntityIDBuffer preBuffer;
 	spStatBuffer->getPredicatesByID(subjectID, &preBuffer, minID, maxID);
 	size_t size = preBuffer.getSize(), i = 0;
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	buffer->setIDCount(2);
 	buffer->setSortKey(0);
 	tempBuffer2->setIDCount(2);
 	tempBuffer2->setSortKey(0);
 
-	do{
+	do {
 		this->findPredicateIDAndObjectIDByPredicateAndSubject(preBuffer[i], subjectID, tempBuffer1);
 		i++;
-	}while(tempBuffer1->getSize() == 0 && i != size);
+	} while (tempBuffer1->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubjectTask,this,preBuffer[i], subjectID));
+		CThreadPool::getInstance().AddTask(
+				boost::bind(&FindEntityID::findPredicateIDAndObjectIDByPredicateAndSubjectTask, this, preBuffer[i],
+				            subjectID));
 	}
 	CThreadPool::getInstance().Wait();
 
-	buffer->operator =(tempBuffer1);
+	buffer->operator=(tempBuffer1);
 	return OK;
 }
 
-Status FindEntityID::findPredicateIDBySubjectAndObject(ID subjectID, ID objectID, EntityIDBuffer* buffer)
-{
+Status FindEntityID::findPredicateIDBySubjectAndObject(ID subjectID, ID objectID, EntityIDBuffer *buffer) {
 	XTemp->empty();
 	XYTemp->empty();
 
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 	Status s;
-	if( (s = spStatBuffer->getPredicatesByID(subjectID, XTemp, 0, UINT_MAX)) != OK )
+	if ((s = spStatBuffer->getPredicatesByID(subjectID, XTemp, 0, UINT_MAX)) != OK)
 		return s;
-	if((s = opStatBuffer->getPredicatesByID(objectID, XYTemp, 0, UINT_MAX)) != OK)
+	if ((s = opStatBuffer->getPredicatesByID(objectID, XYTemp, 0, UINT_MAX)) != OK)
 		return s;
 
 	SortMergeJoin join;
@@ -1390,29 +1385,26 @@ Status FindEntityID::findPredicateIDBySubjectAndObject(ID subjectID, ID objectID
 	return s;
 }
 
-Status FindEntityID::findPredicateIDByObject(ID objectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findPredicateIDByObject(ID objectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 	Status s = opStatBuffer->getPredicatesByID(objectID, buffer, minID, maxID);
 	return s;
 }
 
-Status FindEntityID::findPredicateIDBySubject(ID subjectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findPredicateIDBySubject(ID subjectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 	return spStatBuffer->getPredicatesByID(subjectID, buffer, minID, maxID);
 }
 
-Status FindEntityID::findObjectIDBySubject(ID subjectID, EntityIDBuffer *buffer)
-{
+Status FindEntityID::findObjectIDBySubject(ID subjectID, EntityIDBuffer *buffer) {
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 	EntityIDBuffer preBuffer;
 	spStatBuffer->getPredicatesByID(subjectID, &preBuffer, 0, UINT_MAX);
 	size_t size = preBuffer.getSize();
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	size_t i = 0;
 	EntityIDBuffer *tempBuffer, *curBuffer, *entBuffer;
@@ -1421,83 +1413,12 @@ Status FindEntityID::findObjectIDBySubject(ID subjectID, EntityIDBuffer *buffer)
 	curBuffer = new EntityIDBuffer();
 
 	do {
-		this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID,entBuffer);
-	    i++;
-	} while (entBuffer->getSize() == 0 && i != size);
-
-	for (; i != size; i++) {
-	    this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID,curBuffer);
-	    if (curBuffer->getSize() > 0) {
-	        EntityIDBuffer::mergeSingleBuffer(tempBuffer, entBuffer, curBuffer);
-	        EntityIDBuffer::swapBuffer(entBuffer, tempBuffer);
-	    }
-	}
-
-	entBuffer->uniqe();
- 	buffer->operator =(entBuffer);
-	delete tempBuffer;
-	delete curBuffer;
-	delete entBuffer;
-	return OK;
-}
-
-Status FindEntityID::findObjectIDBySubject(ID subjectID, EntityIDBuffer* buffer, ID minID, ID maxID)
-{
-	buffer->setIDCount(1);
-    buffer->setSortKey(0);
-    EntityIDBuffer preBuffer;
-    spStatBuffer->getPredicatesByID(subjectID, &preBuffer, 0, UINT_MAX);
-    size_t size = preBuffer.getSize();
-    if(size == 0)return NOT_FOUND;
-
-    size_t i = 0;
-    EntityIDBuffer *tempBuffer, *curBuffer, *entBuffer;
-    entBuffer = new EntityIDBuffer();
-    tempBuffer = new EntityIDBuffer();
-    curBuffer = new EntityIDBuffer();
-
-    do {
-        this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID,entBuffer, minID, maxID);
-        i++;
-    } while (entBuffer->getSize() == 0 && i != size);
-
-    for (; i != size; i++) {
-        this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID,curBuffer, minID, maxID);
-        if (curBuffer->getSize() > 0) {
-            EntityIDBuffer::mergeSingleBuffer(tempBuffer, entBuffer, curBuffer);
-            EntityIDBuffer::swapBuffer(entBuffer, tempBuffer);
-        }
-    }
-    entBuffer->uniqe();
-    buffer->operator =(entBuffer);
-    delete tempBuffer;
-    delete curBuffer;
-    delete entBuffer;
-    return OK;
-}
-
-Status FindEntityID::findSubjectIDByObject(ID objectID, EntityIDBuffer* buffer)
-{
-	buffer->setIDCount(1);
-	buffer->setSortKey(0);
-	EntityIDBuffer preBuffer;
-	opStatBuffer->getPredicatesByID(objectID, &preBuffer, 0, UINT_MAX);
-	size_t size = preBuffer.getSize();
-	if(size == 0)return NOT_FOUND;
-
-	size_t i = 0;
-	EntityIDBuffer *tempBuffer, *curBuffer, *entBuffer;
-	entBuffer = new EntityIDBuffer();
-	tempBuffer = new EntityIDBuffer();
-	curBuffer = new EntityIDBuffer();
-
-	do {
-		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID,entBuffer);
+		this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID, entBuffer);
 		i++;
 	} while (entBuffer->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID,curBuffer);
+		this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID, curBuffer);
 		if (curBuffer->getSize() > 0) {
 			EntityIDBuffer::mergeSingleBuffer(tempBuffer, entBuffer, curBuffer);
 			EntityIDBuffer::swapBuffer(entBuffer, tempBuffer);
@@ -1505,22 +1426,20 @@ Status FindEntityID::findSubjectIDByObject(ID objectID, EntityIDBuffer* buffer)
 	}
 
 	entBuffer->uniqe();
-	buffer->operator =(entBuffer);
+	buffer->operator=(entBuffer);
 	delete tempBuffer;
 	delete curBuffer;
 	delete entBuffer;
 	return OK;
 }
 
-Status FindEntityID::findSubjectIDByObject(ID objectID, EntityIDBuffer* buffer,	ID minID, ID maxID) {
+Status FindEntityID::findObjectIDBySubject(ID subjectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 	EntityIDBuffer preBuffer;
-
-	opStatBuffer->getPredicatesByID(objectID, &preBuffer, 0, UINT_MAX);
-
+	spStatBuffer->getPredicatesByID(subjectID, &preBuffer, 0, UINT_MAX);
 	size_t size = preBuffer.getSize();
-	if(size == 0)return NOT_FOUND;
+	if (size == 0)return NOT_FOUND;
 
 	size_t i = 0;
 	EntityIDBuffer *tempBuffer, *curBuffer, *entBuffer;
@@ -1529,27 +1448,97 @@ Status FindEntityID::findSubjectIDByObject(ID objectID, EntityIDBuffer* buffer,	
 	curBuffer = new EntityIDBuffer();
 
 	do {
-		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID,entBuffer, minID, maxID);
+		this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID, entBuffer, minID, maxID);
 		i++;
 	} while (entBuffer->getSize() == 0 && i != size);
 
 	for (; i != size; i++) {
-		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID,curBuffer, minID, maxID);
+		this->findObjectIDByPredicateAndSubject(preBuffer[i], subjectID, curBuffer, minID, maxID);
 		if (curBuffer->getSize() > 0) {
 			EntityIDBuffer::mergeSingleBuffer(tempBuffer, entBuffer, curBuffer);
 			EntityIDBuffer::swapBuffer(entBuffer, tempBuffer);
 		}
 	}
 	entBuffer->uniqe();
-	buffer->operator =(entBuffer);
+	buffer->operator=(entBuffer);
 	delete tempBuffer;
 	delete curBuffer;
 	delete entBuffer;
 	return OK;
 }
 
-Status FindEntityID::findSubject(EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findSubjectIDByObject(ID objectID, EntityIDBuffer *buffer) {
+	buffer->setIDCount(1);
+	buffer->setSortKey(0);
+	EntityIDBuffer preBuffer;
+	opStatBuffer->getPredicatesByID(objectID, &preBuffer, 0, UINT_MAX);
+	size_t size = preBuffer.getSize();
+	if (size == 0)return NOT_FOUND;
+
+	size_t i = 0;
+	EntityIDBuffer *tempBuffer, *curBuffer, *entBuffer;
+	entBuffer = new EntityIDBuffer();
+	tempBuffer = new EntityIDBuffer();
+	curBuffer = new EntityIDBuffer();
+
+	do {
+		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID, entBuffer);
+		i++;
+	} while (entBuffer->getSize() == 0 && i != size);
+
+	for (; i != size; i++) {
+		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID, curBuffer);
+		if (curBuffer->getSize() > 0) {
+			EntityIDBuffer::mergeSingleBuffer(tempBuffer, entBuffer, curBuffer);
+			EntityIDBuffer::swapBuffer(entBuffer, tempBuffer);
+		}
+	}
+
+	entBuffer->uniqe();
+	buffer->operator=(entBuffer);
+	delete tempBuffer;
+	delete curBuffer;
+	delete entBuffer;
+	return OK;
+}
+
+Status FindEntityID::findSubjectIDByObject(ID objectID, EntityIDBuffer *buffer, ID minID, ID maxID) {
+	buffer->setIDCount(1);
+	buffer->setSortKey(0);
+	EntityIDBuffer preBuffer;
+
+	opStatBuffer->getPredicatesByID(objectID, &preBuffer, 0, UINT_MAX);
+
+	size_t size = preBuffer.getSize();
+	if (size == 0)return NOT_FOUND;
+
+	size_t i = 0;
+	EntityIDBuffer *tempBuffer, *curBuffer, *entBuffer;
+	entBuffer = new EntityIDBuffer();
+	tempBuffer = new EntityIDBuffer();
+	curBuffer = new EntityIDBuffer();
+
+	do {
+		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID, entBuffer, minID, maxID);
+		i++;
+	} while (entBuffer->getSize() == 0 && i != size);
+
+	for (; i != size; i++) {
+		this->findSubjectIDByPredicateAndObject(preBuffer[i], objectID, curBuffer, minID, maxID);
+		if (curBuffer->getSize() > 0) {
+			EntityIDBuffer::mergeSingleBuffer(tempBuffer, entBuffer, curBuffer);
+			EntityIDBuffer::swapBuffer(entBuffer, tempBuffer);
+		}
+	}
+	entBuffer->uniqe();
+	buffer->operator=(entBuffer);
+	delete tempBuffer;
+	delete curBuffer;
+	delete entBuffer;
+	return OK;
+}
+
+Status FindEntityID::findSubject(EntityIDBuffer *buffer, ID minID, ID maxID) {
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 
@@ -1560,15 +1549,13 @@ Status FindEntityID::findSubject(EntityIDBuffer* buffer, ID minID, ID maxID)
 /**
  * the predicate's id is continuous.
  */
-Status FindEntityID::findPredicate(EntityIDBuffer* buffer, ID minID, ID maxID)
-{
-	for(ID id = minID; id <= maxID; id++)
+Status FindEntityID::findPredicate(EntityIDBuffer *buffer, ID minID, ID maxID) {
+	for (ID id = minID; id <= maxID; id++)
 		buffer->insertID(id);
 	return OK;
 }
 
-Status FindEntityID::findObject(EntityIDBuffer* buffer, ID minID, ID maxID)
-{
+Status FindEntityID::findObject(EntityIDBuffer *buffer, ID minID, ID maxID) {
 	buffer->setIDCount(1);
 	buffer->setSortKey(0);
 
@@ -1577,23 +1564,22 @@ Status FindEntityID::findObject(EntityIDBuffer* buffer, ID minID, ID maxID)
 }
 
 //FINDSOBYNONE
-Status FindEntityID::findSOByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
+Status FindEntityID::findSOByKnowBuffer(EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
 	buffer->setIDCount(2);
 	buffer->setSortKey(10);//unsorted
-	if(knowBuffer->sorted == false)
+	if (knowBuffer->sorted == false)
 		return ERROR;
-	if( knowBuffer->getSize() == 0){
+	if (knowBuffer->getSize() == 0) {
 		return ERROR;
-	}
-	else{
+	} else {
 		EntityIDBuffer transBuffer;
-		ID key=0,lastKey=0;
-		ID * p = knowBuffer->getBuffer();
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
 		int IDCount = knowBuffer->getIDCount();
 		int sortKey = knowBuffer->getSortKey();
-		for(unsigned i = 0;i < knowBuffer->getSize();i++){
-			key = *(p+i*IDCount + sortKey);
-			if(key > lastKey){
+		for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+			key = *(p + i * IDCount + sortKey);
+			if (key > lastKey) {
 				transBuffer.insertID(key);
 				lastKey = key;
 			}
@@ -1603,31 +1589,35 @@ Status FindEntityID::findSOByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* k
 		size_t chunkSize = size / chunkCount;
 		size_t chunkLeft = size % chunkCount;
 		p = transBuffer.getBuffer();
-		
-		if(chunkSize){
+
+		if (chunkSize) {
 			EntityIDBuffer tempBuffer[chunkCount];
 			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSOByKnowBufferTask,this,p, chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSOByKnowBufferTask,this,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSOByKnowBufferTask, this, p, chunkSize + 1, knowElement,
+							            &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSOByKnowBufferTask, this, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
 				}
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
+			for (unsigned i = 0; i < chunkCount; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
-		}else{
+		} else {
 			EntityIDBuffer tempBuffer[chunkLeft];
 			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSOByKnowBufferTask,this,p, 1,knowElement,&tempBuffer[i]));
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findSOByKnowBufferTask, this, p, 1, knowElement, &tempBuffer[i]));
 				p += 1;
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
+			for (unsigned i = 0; i < chunkLeft; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
 		}
@@ -1636,28 +1626,28 @@ Status FindEntityID::findSOByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* k
 	return OK;
 }
 
-Status FindEntityID::findSOByKnowBufferTask(ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
+Status
+FindEntityID::findSOByKnowBufferTask(ID *p, size_t length, EntityType knowElement, EntityIDBuffer *resultBuffer) {
 	EntityIDBuffer tempBuffer;
-	unsigned i=0,j=0;
+	unsigned i = 0, j = 0;
 	resultBuffer->setIDCount(2);
 	resultBuffer->setSortKey(1);
-	if(knowElement == SUBJECT){
-		for (i=0; i < length; i++) {
+	if (knowElement == SUBJECT) {
+		for (i = 0; i < length; i++) {
 			ID key = *(p + i);
-	        findObjectIDBySubject(key, &tempBuffer, 0, UINT_MAX);
-	        unsigned tempSize = tempBuffer.getSize();
-	        for(j=0;j < tempSize; j++){
-	            resultBuffer->insertID(key);
+			findObjectIDBySubject(key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID(key);
 				resultBuffer->insertID((tempBuffer)[j]);
-	        }
-	    }
-	}
-	else if (knowElement == OBJECT) {
-		for (i=0; i < length; i++) {
+			}
+		}
+	} else if (knowElement == OBJECT) {
+		for (i = 0; i < length; i++) {
 			ID key = *(p + i);
 			findSubjectIDByObject(key, &tempBuffer, 0, UINT_MAX);
 			unsigned tempSize = tempBuffer.getSize();
-			for(j=0;j < tempSize; j++){
+			for (j = 0; j < tempSize; j++) {
 				resultBuffer->insertID((tempBuffer)[j]);
 				resultBuffer->insertID(key);
 			}
@@ -1668,113 +1658,22 @@ Status FindEntityID::findSOByKnowBufferTask(ID* p, size_t length , EntityType kn
 }
 
 //FINDOSBYNONE
-Status FindEntityID::findOSByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
-    buffer->setIDCount(2);
-    buffer->setSortKey(10);//unsorted
-    if(knowBuffer->sorted == false)
-        return ERROR;
-    if( knowBuffer->getSize() == 0){
-        return ERROR;
-    }
-    else{
-        EntityIDBuffer transBuffer;
-        ID key=0,lastKey=0;
-        ID * p = knowBuffer->getBuffer();
-        int IDCount = knowBuffer->getIDCount();
-        int sortKey = knowBuffer->getSortKey();
-        for(unsigned i = 0;i < knowBuffer->getSize();i++){
-            key = *(p+i*IDCount + sortKey);
-            if(key > lastKey){
-                transBuffer.insertID(key);
-                lastKey = key;
-            }
-        }
-        size_t size = transBuffer.getSize();
-        unsigned chunkCount = THREAD_NUMBER;
-        size_t chunkSize = size / chunkCount;
-        size_t chunkLeft = size % chunkCount;
-        p = transBuffer.getBuffer();
-		
-		if(chunkSize){
-			EntityIDBuffer tempBuffer[chunkCount];
-			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOSByKnowBufferTask,this,p, chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOSByKnowBufferTask,this,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
-				}
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}else{
-			EntityIDBuffer tempBuffer[chunkLeft];
-			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOSByKnowBufferTask,this,p, 1,knowElement,&tempBuffer[i]));
-				p += 1;
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}
-        buffer->sort(1);
-    }
-    return OK;
-}
-
-Status FindEntityID::findOSByKnowBufferTask(ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
-    EntityIDBuffer tempBuffer;
-    unsigned i=0,j=0;
-    resultBuffer->setIDCount(2);
-    resultBuffer->setSortKey(1);
-    if (knowElement == OBJECT) {
-        for (i=0; i < length; i++) {
-            ID key = *(p + i);
-            findSubjectIDByObject(key, &tempBuffer, 0, UINT_MAX);
-            unsigned tempSize = tempBuffer.getSize();
-            for(j=0;j < tempSize; j++){
-                resultBuffer->insertID(key);
-				resultBuffer->insertID((tempBuffer)[j]);
-            }
-        }
-    }else if(knowElement == SUBJECT){
-		for (i=0; i < length; i++) {
-            ID key = *(p + i);
-            findObjectIDBySubject(key, &tempBuffer, 0, UINT_MAX);
-            unsigned tempSize = tempBuffer.getSize();
-            for(j=0;j < tempSize; j++){
-                resultBuffer->insertID((tempBuffer)[j]);
-				resultBuffer->insertID(key);
-            }
-        }
-	}
-
-    return OK;
-}
-
-//FINDSPBYNONE
-Status FindEntityID::findSPByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
+Status FindEntityID::findOSByKnowBuffer(EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
 	buffer->setIDCount(2);
 	buffer->setSortKey(10);//unsorted
-	if(knowBuffer->sorted == false)
+	if (knowBuffer->sorted == false)
 		return ERROR;
-	if( knowBuffer->getSize() == 0){
+	if (knowBuffer->getSize() == 0) {
 		return ERROR;
-	}
-	else{
+	} else {
 		EntityIDBuffer transBuffer;
-		ID key=0,lastKey=0;
-		ID * p = knowBuffer->getBuffer();
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
 		int IDCount = knowBuffer->getIDCount();
 		int sortKey = knowBuffer->getSortKey();
-		for(unsigned i = 0;i < knowBuffer->getSize();i++){
-			key = *(p+i*IDCount + sortKey);
-			if(key > lastKey){
+		for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+			key = *(p + i * IDCount + sortKey);
+			if (key > lastKey) {
 				transBuffer.insertID(key);
 				lastKey = key;
 			}
@@ -1784,31 +1683,35 @@ Status FindEntityID::findSPByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* k
 		size_t chunkSize = size / chunkCount;
 		size_t chunkLeft = size % chunkCount;
 		p = transBuffer.getBuffer();
-		
-		if(chunkSize){
+
+		if (chunkSize) {
 			EntityIDBuffer tempBuffer[chunkCount];
 			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSPByKnowBufferTask,this,p, chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSPByKnowBufferTask,this,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findOSByKnowBufferTask, this, p, chunkSize + 1, knowElement,
+							            &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findOSByKnowBufferTask, this, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
 				}
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
+			for (unsigned i = 0; i < chunkCount; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
-		}else{
+		} else {
 			EntityIDBuffer tempBuffer[chunkLeft];
 			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSPByKnowBufferTask,this,p, 1,knowElement,&tempBuffer[i]));
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findOSByKnowBufferTask, this, p, 1, knowElement, &tempBuffer[i]));
 				p += 1;
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
+			for (unsigned i = 0; i < chunkLeft; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
 		}
@@ -1817,231 +1720,54 @@ Status FindEntityID::findSPByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* k
 	return OK;
 }
 
-Status FindEntityID::findSPByKnowBufferTask(ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
+Status
+FindEntityID::findOSByKnowBufferTask(ID *p, size_t length, EntityType knowElement, EntityIDBuffer *resultBuffer) {
 	EntityIDBuffer tempBuffer;
-	unsigned i=0,j=0;
-	resultBuffer->setIDCount(2);
-	resultBuffer->setSortKey(1);
-	if (knowElement == SUBJECT) {
-		for (i=0; i < length; i++) {
-			ID key = *(p + i);
-			findPredicateIDBySubject(key, &tempBuffer, 0, UINT_MAX);
-			unsigned tempSize = tempBuffer.getSize();
-			for(j=0;j < tempSize; j++){
-				resultBuffer->insertID(key);
-				resultBuffer->insertID((tempBuffer)[j]);
-			}
-		}
-	}else if(knowElement == PREDICATE){
-		for (i=0; i < length; i++) {
-            ID key = *(p + i);
-            findSubjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
-            unsigned tempSize = tempBuffer.getSize();
-            for(j=0;j < tempSize; j++){
-            	resultBuffer->insertID((tempBuffer)[j]);
-                resultBuffer->insertID(key);
-            }
-        }
-	}
-	return OK;
-}
-
-//FINDPSBYNONE
-Status FindEntityID::findPSByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
-	buffer->setIDCount(2);
-	buffer->setSortKey(10);//unsorted
-	if(knowBuffer->sorted == false)
-		return ERROR;
-	if( knowBuffer->getSize() == 0){
-		return ERROR;
-	}
-	else{
-		EntityIDBuffer transBuffer;
-		ID key=0,lastKey=0;
-		ID * p = knowBuffer->getBuffer();
-		int IDCount = knowBuffer->getIDCount();
-		int sortKey = knowBuffer->getSortKey();
-		for(unsigned i = 0;i < knowBuffer->getSize();i++){
-			key = *(p+i*IDCount + sortKey);
-			if(key > lastKey){
-				transBuffer.insertID(key);
-				lastKey = key;
-			}
-		}
-		size_t size = transBuffer.getSize();
-		unsigned chunkCount = THREAD_NUMBER;
-		size_t chunkSize = size / chunkCount;
-		size_t chunkLeft = size % chunkCount;
-		p = transBuffer.getBuffer();
-		
-		if(chunkSize){
-			EntityIDBuffer tempBuffer[chunkCount];
-			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPSByKnowBufferTask,this,p, chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPSByKnowBufferTask,this,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
-				}
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}else{
-			EntityIDBuffer tempBuffer[chunkLeft];
-			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPSByKnowBufferTask,this,p, 1,knowElement,&tempBuffer[i]));
-				p += 1;
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}
-		buffer->sort(1);
-	}
-	return OK;
-}
-
-Status FindEntityID::findPSByKnowBufferTask(ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
-	EntityIDBuffer tempBuffer;
-	unsigned i=0,j=0;
-	resultBuffer->setIDCount(2);
-	resultBuffer->setSortKey(1);
-	if (knowElement == PREDICATE) {
-		for (i=0; i < length; i++) {
-			ID key = *(p + i);
-			findSubjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
-			unsigned tempSize = tempBuffer.getSize();
-			for(j=0;j < tempSize; j++){
-				resultBuffer->insertID(key);
-				resultBuffer->insertID((tempBuffer)[j]);
-			}
-		}
-	}else if(knowElement == SUBJECT){
-		for (i=0; i < length; i++) {
-            ID key = *(p + i);
-            findPredicateIDBySubject(key, &tempBuffer, 0, UINT_MAX);
-            unsigned tempSize = tempBuffer.getSize();
-            for(j=0;j < tempSize; j++){
-            	resultBuffer->insertID((tempBuffer)[j]);
-                resultBuffer->insertID(key);
-            }
-        }
-	}
-	return OK;
-}
-
-//FINDOPBYNONE
-Status FindEntityID::findOPByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
-	buffer->setIDCount(2);
-	buffer->setSortKey(10);//unsorted
-	if(knowBuffer->sorted == false)
-		return ERROR;
-	if( knowBuffer->getSize() == 0){
-		return ERROR;
-	}
-	else{
-		EntityIDBuffer transBuffer;
-		ID key=0,lastKey=0;
-		ID * p = knowBuffer->getBuffer();
-		int IDCount = knowBuffer->getIDCount();
-		int sortKey = knowBuffer->getSortKey();
-		for(unsigned i = 0;i < knowBuffer->getSize();i++){
-			key = *(p+i*IDCount + sortKey);
-			if(key > lastKey){
-				transBuffer.insertID(key);
-				lastKey = key;
-			}
-		}
-		size_t size = transBuffer.getSize();
-		unsigned chunkCount = THREAD_NUMBER;
-		size_t chunkSize = size / chunkCount;
-		size_t chunkLeft = size % chunkCount;
-		p = transBuffer.getBuffer();
-		
-		if(chunkSize){
-			EntityIDBuffer tempBuffer[chunkCount];
-			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOPByKnowBufferTask,this,p, chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOPByKnowBufferTask,this,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
-				}
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}else{
-			EntityIDBuffer tempBuffer[chunkLeft];
-			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOPByKnowBufferTask,this,p, 1,knowElement,&tempBuffer[i]));
-				p += 1;
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}
-		buffer->sort(1);
-	}
-	return OK;
-}
-
-Status FindEntityID::findOPByKnowBufferTask(ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
-	EntityIDBuffer tempBuffer;
-	unsigned i=0,j=0;
+	unsigned i = 0, j = 0;
 	resultBuffer->setIDCount(2);
 	resultBuffer->setSortKey(1);
 	if (knowElement == OBJECT) {
-		for (i=0; i < length; i++) {
+		for (i = 0; i < length; i++) {
 			ID key = *(p + i);
-			findPredicateIDByObject(key, &tempBuffer, 0, UINT_MAX);
+			findSubjectIDByObject(key, &tempBuffer, 0, UINT_MAX);
 			unsigned tempSize = tempBuffer.getSize();
-			for(j=0;j < tempSize; j++){
+			for (j = 0; j < tempSize; j++) {
 				resultBuffer->insertID(key);
 				resultBuffer->insertID((tempBuffer)[j]);
 			}
 		}
-	}else if(knowElement == PREDICATE){
-		for (i=0; i < length; i++) {
-            ID key = *(p + i);
-            findObjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
-            unsigned tempSize = tempBuffer.getSize();
-            for(j=0;j < tempSize; j++){
-            	resultBuffer->insertID((tempBuffer)[j]);
-                resultBuffer->insertID(key);
-            }
-        }
+	} else if (knowElement == SUBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findObjectIDBySubject(key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID((tempBuffer)[j]);
+				resultBuffer->insertID(key);
+			}
+		}
 	}
+
 	return OK;
 }
 
-//FINDPOBYNONE
-Status FindEntityID::findPOByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
+//FINDSPBYNONE
+Status FindEntityID::findSPByKnowBuffer(EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
 	buffer->setIDCount(2);
 	buffer->setSortKey(10);//unsorted
-	if(knowBuffer->sorted == false)
+	if (knowBuffer->sorted == false)
 		return ERROR;
-	if( knowBuffer->getSize() == 0){
+	if (knowBuffer->getSize() == 0) {
 		return ERROR;
-	}
-	else{
+	} else {
 		EntityIDBuffer transBuffer;
-		ID key=0,lastKey=0;
-		ID * p = knowBuffer->getBuffer();
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
 		int IDCount = knowBuffer->getIDCount();
 		int sortKey = knowBuffer->getSortKey();
-		for(unsigned i = 0;i < knowBuffer->getSize();i++){
-			key = *(p+i*IDCount + sortKey);
-			if(key > lastKey){
+		for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+			key = *(p + i * IDCount + sortKey);
+			if (key > lastKey) {
 				transBuffer.insertID(key);
 				lastKey = key;
 			}
@@ -2052,30 +1778,34 @@ Status FindEntityID::findPOByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* k
 		size_t chunkLeft = size % chunkCount;
 		p = transBuffer.getBuffer();
 
-		if(chunkSize){
+		if (chunkSize) {
 			EntityIDBuffer tempBuffer[chunkCount];
 			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPOByKnowBufferTask,this,p, chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPOByKnowBufferTask,this,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSPByKnowBufferTask, this, p, chunkSize + 1, knowElement,
+							            &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSPByKnowBufferTask, this, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
 				}
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
+			for (unsigned i = 0; i < chunkCount; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
-		}else{
+		} else {
 			EntityIDBuffer tempBuffer[chunkLeft];
 			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findPOByKnowBufferTask,this,p, 1,knowElement,&tempBuffer[i]));
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findSPByKnowBufferTask, this, p, 1, knowElement, &tempBuffer[i]));
 				p += 1;
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
+			for (unsigned i = 0; i < chunkLeft; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
 		}
@@ -2084,118 +1814,26 @@ Status FindEntityID::findPOByKnowBuffer(EntityIDBuffer* buffer,EntityIDBuffer* k
 	return OK;
 }
 
-Status FindEntityID::findPOByKnowBufferTask(ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
+Status
+FindEntityID::findSPByKnowBufferTask(ID *p, size_t length, EntityType knowElement, EntityIDBuffer *resultBuffer) {
 	EntityIDBuffer tempBuffer;
-	unsigned i=0,j=0;
-	resultBuffer->setIDCount(2);
-	resultBuffer->setSortKey(1);
-	if (knowElement == PREDICATE) {
-		for (i=0; i < length; i++) {
-			ID key = *(p + i);
-			findObjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
-			unsigned tempSize = tempBuffer.getSize();
-			for(j=0;j < tempSize; j++){
-				resultBuffer->insertID(key);
-				resultBuffer->insertID((tempBuffer)[j]);
-			}
-		}
-	}else if(knowElement == OBJECT){
-		for (i=0; i < length; i++) {
-            ID key = *(p + i);
-            findPredicateIDByObject(key, &tempBuffer, 0, UINT_MAX);
-            unsigned tempSize = tempBuffer.getSize();
-            for(j=0;j < tempSize; j++){
-            	resultBuffer->insertID((tempBuffer)[j]);
-                resultBuffer->insertID(key);
-            }
-        }
-	}
-	return OK;
-}
-
-Status FindEntityID::findSOByKnowBuffer(ID preID,EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
-	buffer->setIDCount(2);
-	buffer->setSortKey(10);//unsorted
-	if(knowBuffer->sorted == false)
-		return ERROR;
-	if( knowBuffer->getSize() == 0){
-		return ERROR;
-	}
-	else{
-		EntityIDBuffer transBuffer;
-		ID key=0,lastKey=0;
-		ID * p = knowBuffer->getBuffer();
-		int IDCount = knowBuffer->getIDCount();
-		int sortKey = knowBuffer->getSortKey();
-		if (IDCount > 1) {
-			for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
-				key = *(p + i * IDCount + sortKey);
-				if (key > lastKey) {
-					transBuffer.insertID(key);
-					lastKey = key;
-				}
-			}
-		}else{
-			transBuffer= (knowBuffer);
-		}
-		size_t size = transBuffer.getSize();
-		unsigned chunkCount = THREAD_NUMBER;
-		size_t chunkSize = size / chunkCount;
-		size_t chunkLeft = size % chunkCount;
-		p = transBuffer.getBuffer();
-		
-		if(chunkSize){
-			EntityIDBuffer tempBuffer[chunkCount];
-			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSOByKnowBufferTask1,this,preID,p,chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSOByKnowBufferTask1,this,preID,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
-				}
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}else{
-			EntityIDBuffer tempBuffer[chunkLeft];
-			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSOByKnowBufferTask1,this,preID,p, 1,knowElement,&tempBuffer[i]));
-				p += 1;
-			}
-			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
-				buffer->appendBuffer(&tempBuffer[i]);
-			}
-		}
-		buffer->sort(1);
-
-	}
-	return OK;
-}
-
-Status FindEntityID::findSOByKnowBufferTask1(ID preID,ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
-	EntityIDBuffer tempBuffer;
-	unsigned i=0,j=0;
+	unsigned i = 0, j = 0;
 	resultBuffer->setIDCount(2);
 	resultBuffer->setSortKey(1);
 	if (knowElement == SUBJECT) {
-		for (i=0; i < length; i++) {
+		for (i = 0; i < length; i++) {
 			ID key = *(p + i);
-			findObjectIDByPredicateAndSubject(preID,key, &tempBuffer, 0, UINT_MAX);
+			findPredicateIDBySubject(key, &tempBuffer, 0, UINT_MAX);
 			unsigned tempSize = tempBuffer.getSize();
-			for(j=0;j < tempSize; j++){
+			for (j = 0; j < tempSize; j++) {
 				resultBuffer->insertID(key);
 				resultBuffer->insertID((tempBuffer)[j]);
 			}
 		}
-	}else if(knowElement == OBJECT){
+	} else if (knowElement == PREDICATE) {
 		for (i = 0; i < length; i++) {
 			ID key = *(p + i);
-			findSubjectIDByPredicateAndObject(preID, key, &tempBuffer, 0,UINT_MAX);
+			findSubjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
 			unsigned tempSize = tempBuffer.getSize();
 			for (j = 0; j < tempSize; j++) {
 				resultBuffer->insertID((tempBuffer)[j]);
@@ -2206,196 +1844,585 @@ Status FindEntityID::findSOByKnowBufferTask1(ID preID,ID* p, size_t length , Ent
 	return OK;
 }
 
-Status FindEntityID::findOSByKnowBuffer(ID preID,EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
-    buffer->setIDCount(2);
-    buffer->setSortKey(10);//unsorted
-    if(knowBuffer->sorted == false)
-        return ERROR;
-    if( knowBuffer->getSize() == 0){
-        return ERROR;
-    }
-    else{
-        EntityIDBuffer transBuffer;
-        ID key=0,lastKey=0;
-        ID * p = knowBuffer->getBuffer();
-        int IDCount = knowBuffer->getIDCount();
-        int sortKey = knowBuffer->getSortKey();
-        if (IDCount > 1) {
-            for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
-                key = *(p + i * IDCount + sortKey);
-                if (key > lastKey) {
-                    transBuffer.insertID(key);
-                    lastKey = key;
-                }
-            }
-        }else{
-            transBuffer= (knowBuffer);
-        }
+//FINDPSBYNONE
+Status FindEntityID::findPSByKnowBuffer(EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
+	buffer->setIDCount(2);
+	buffer->setSortKey(10);//unsorted
+	if (knowBuffer->sorted == false)
+		return ERROR;
+	if (knowBuffer->getSize() == 0) {
+		return ERROR;
+	} else {
+		EntityIDBuffer transBuffer;
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
+		int IDCount = knowBuffer->getIDCount();
+		int sortKey = knowBuffer->getSortKey();
+		for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+			key = *(p + i * IDCount + sortKey);
+			if (key > lastKey) {
+				transBuffer.insertID(key);
+				lastKey = key;
+			}
+		}
+		size_t size = transBuffer.getSize();
+		unsigned chunkCount = THREAD_NUMBER;
+		size_t chunkSize = size / chunkCount;
+		size_t chunkLeft = size % chunkCount;
+		p = transBuffer.getBuffer();
 
-        size_t size = transBuffer.getSize();
-        unsigned chunkCount = THREAD_NUMBER;
-        size_t chunkSize = size / chunkCount;
-        size_t chunkLeft = size % chunkCount;
-        p = transBuffer.getBuffer();
-        
-		if(chunkSize){
+		if (chunkSize) {
 			EntityIDBuffer tempBuffer[chunkCount];
 			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOSByKnowBufferTask1,this,preID,p, chunkSize+1,knowElement,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOSByKnowBufferTask1,this,preID,p, chunkSize, knowElement,&tempBuffer[i]));
-					p +=  chunkSize;
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findPSByKnowBufferTask, this, p, chunkSize + 1, knowElement,
+							            &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findPSByKnowBufferTask, this, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
 				}
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
+			for (unsigned i = 0; i < chunkCount; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
-		}else{
+		} else {
 			EntityIDBuffer tempBuffer[chunkLeft];
 			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findOSByKnowBufferTask1,this,preID,p, 1,knowElement,&tempBuffer[i]));
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findPSByKnowBufferTask, this, p, 1, knowElement, &tempBuffer[i]));
 				p += 1;
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
+			for (unsigned i = 0; i < chunkLeft; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
 		}
-        buffer->sort(1);
-    }
-    return OK;
+		buffer->sort(1);
+	}
+	return OK;
 }
 
-Status FindEntityID::findOSByKnowBufferTask1(ID preID,ID* p, size_t length , EntityType knowElement,EntityIDBuffer* resultBuffer){
-    if(length == 0)
-        return OK;
-    EntityIDBuffer tempBuffer;
-    unsigned i=0,j=0;
-    resultBuffer->setIDCount(2);
-    resultBuffer->setSortKey(1);
-    if (knowElement == OBJECT) {
-        for (i=0; i < length; i++) {
+Status
+FindEntityID::findPSByKnowBufferTask(ID *p, size_t length, EntityType knowElement, EntityIDBuffer *resultBuffer) {
+	EntityIDBuffer tempBuffer;
+	unsigned i = 0, j = 0;
+	resultBuffer->setIDCount(2);
+	resultBuffer->setSortKey(1);
+	if (knowElement == PREDICATE) {
+		for (i = 0; i < length; i++) {
 			ID key = *(p + i);
-			findSubjectIDByPredicateAndObject(preID,key, &tempBuffer, 0, UINT_MAX);
+			findSubjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
 			unsigned tempSize = tempBuffer.getSize();
-			for(j=0;j < tempSize; j++){
+			for (j = 0; j < tempSize; j++) {
 				resultBuffer->insertID(key);
 				resultBuffer->insertID((tempBuffer)[j]);
 			}
 		}
-    }else if(knowElement == SUBJECT){
-        for (i = 0; i < length; i++) {
-            ID key = *(p + i);
-            findObjectIDByPredicateAndSubject(preID, key, &tempBuffer, 0,UINT_MAX);
-            unsigned tempSize = tempBuffer.getSize();
-            for (j = 0; j < tempSize; j++) {
-                resultBuffer->insertID((tempBuffer)[j]);
-                resultBuffer->insertID(key);
-            }
-        }
-    }
-    return OK;
+	} else if (knowElement == SUBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findPredicateIDBySubject(key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID((tempBuffer)[j]);
+				resultBuffer->insertID(key);
+			}
+		}
+	}
+	return OK;
 }
 
-Status FindEntityID::findSByKnowBuffer(ID preID,EntityIDBuffer* buffer,EntityIDBuffer* knowBuffer, EntityType knowElement){
-    buffer->setIDCount(2);
-    buffer->setSortKey(10);//unsorted
-    if(!knowBuffer->sorted ){
-        return ERROR;
-    }
-    if( knowBuffer->getSize() == 0){
-        return ERROR;
-    }
-    if(knowElement == SUBJECT){
-        ID key=0,lastKey=0;
-        ID * p = knowBuffer->getBuffer();
-        int IDCount = knowBuffer->getIDCount();
-        int sortKey = knowBuffer->getSortKey();
-        if (IDCount > 1) {
-            for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
-                key = *(p + i * IDCount + sortKey);
-                if (key > lastKey) {
-                    buffer->insertID(key);
-                    lastKey = key;
-                }
-            }
-        }else{
-            (*buffer) = (knowBuffer);
-        }
-
-        return ERROR;
-    }
-    else{
+//FINDOPBYNONE
+Status FindEntityID::findOPByKnowBuffer(EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
+	buffer->setIDCount(2);
+	buffer->setSortKey(10);//unsorted
+	if (knowBuffer->sorted == false)
+		return ERROR;
+	if (knowBuffer->getSize() == 0) {
+		return ERROR;
+	} else {
 		EntityIDBuffer transBuffer;
-        ID key=0,lastKey=0;
-        ID * p = knowBuffer->getBuffer();
-        int IDCount = knowBuffer->getIDCount();
-        int sortKey = knowBuffer->getSortKey();
-        if (IDCount > 1) {
-            for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
-                key = *(p + i * IDCount + sortKey);
-                if (key > lastKey) {
-                    transBuffer.insertID(key);
-                    lastKey = key;
-                }
-            }
-        }else{
-            transBuffer= (knowBuffer);
-        }
-        transBuffer.print();
-        size_t size = transBuffer.getSize();
-        unsigned chunkCount = THREAD_NUMBER;
-        size_t chunkSize = size / chunkCount;
-        size_t chunkLeft = size % chunkCount;
-        p = transBuffer.getBuffer();
-    
-		if(chunkSize){
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
+		int IDCount = knowBuffer->getIDCount();
+		int sortKey = knowBuffer->getSortKey();
+		for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+			key = *(p + i * IDCount + sortKey);
+			if (key > lastKey) {
+				transBuffer.insertID(key);
+				lastKey = key;
+			}
+		}
+		size_t size = transBuffer.getSize();
+		unsigned chunkCount = THREAD_NUMBER;
+		size_t chunkSize = size / chunkCount;
+		size_t chunkLeft = size % chunkCount;
+		p = transBuffer.getBuffer();
+
+		if (chunkSize) {
 			EntityIDBuffer tempBuffer[chunkCount];
 			for (unsigned i = 0; i < chunkCount; i++) {
-				if (i < chunkLeft){
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSByKnowBufferTask1,this,preID,p, chunkSize+1,&tempBuffer[i]));
-					p += (chunkSize+1);
-				}
-				else{
-					CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSByKnowBufferTask1,this,preID,p, chunkSize,&tempBuffer[i]));
-					p +=  chunkSize;
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findOPByKnowBufferTask, this, p, chunkSize + 1, knowElement,
+							            &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findOPByKnowBufferTask, this, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
 				}
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkCount; i++){
+			for (unsigned i = 0; i < chunkCount; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
-		}else{
+		} else {
 			EntityIDBuffer tempBuffer[chunkLeft];
 			for (unsigned i = 0; i < chunkLeft; i++) {
-				CThreadPool::getInstance().AddTask(boost::bind(&FindEntityID::findSByKnowBufferTask1,this,preID,p, 1,&tempBuffer[i]));
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findOPByKnowBufferTask, this, p, 1, knowElement, &tempBuffer[i]));
 				p += 1;
 			}
 			CThreadPool::getInstance().Wait();
-			for(unsigned i=0; i< chunkLeft; i++){
+			for (unsigned i = 0; i < chunkLeft; i++) {
 				buffer->appendBuffer(&tempBuffer[i]);
 			}
 		}
-        buffer->sort(1);
-    }
-    return OK;
+		buffer->sort(1);
+	}
+	return OK;
 }
-Status FindEntityID::findSByKnowBufferTask1(ID preID,ID* p, size_t length ,EntityIDBuffer* resultBuffer){
-    EntityIDBuffer tempBuffer;
-    unsigned i=0,j=0;
-    resultBuffer->setIDCount(2);
-    resultBuffer->setSortKey(1);
-    for (i=0; i < length; i++) {
-        ID key = *(p + i);
-        findSubjectIDByPredicateAndObject(preID,key, &tempBuffer, 0, UINT_MAX);
-        unsigned tempSize = tempBuffer.getSize();
-        for(j=0;j < tempSize; j++){
-            resultBuffer->insertID((tempBuffer)[j]);
-        }
-    }
-    return OK;
+
+Status
+FindEntityID::findOPByKnowBufferTask(ID *p, size_t length, EntityType knowElement, EntityIDBuffer *resultBuffer) {
+	EntityIDBuffer tempBuffer;
+	unsigned i = 0, j = 0;
+	resultBuffer->setIDCount(2);
+	resultBuffer->setSortKey(1);
+	if (knowElement == OBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findPredicateIDByObject(key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID(key);
+				resultBuffer->insertID((tempBuffer)[j]);
+			}
+		}
+	} else if (knowElement == PREDICATE) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findObjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID((tempBuffer)[j]);
+				resultBuffer->insertID(key);
+			}
+		}
+	}
+	return OK;
+}
+
+//FINDPOBYNONE
+Status FindEntityID::findPOByKnowBuffer(EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
+	buffer->setIDCount(2);
+	buffer->setSortKey(10);//unsorted
+	if (knowBuffer->sorted == false)
+		return ERROR;
+	if (knowBuffer->getSize() == 0) {
+		return ERROR;
+	} else {
+		EntityIDBuffer transBuffer;
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
+		int IDCount = knowBuffer->getIDCount();
+		int sortKey = knowBuffer->getSortKey();
+		for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+			key = *(p + i * IDCount + sortKey);
+			if (key > lastKey) {
+				transBuffer.insertID(key);
+				lastKey = key;
+			}
+		}
+		size_t size = transBuffer.getSize();
+		unsigned chunkCount = THREAD_NUMBER;
+		size_t chunkSize = size / chunkCount;
+		size_t chunkLeft = size % chunkCount;
+		p = transBuffer.getBuffer();
+
+		if (chunkSize) {
+			EntityIDBuffer tempBuffer[chunkCount];
+			for (unsigned i = 0; i < chunkCount; i++) {
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findPOByKnowBufferTask, this, p, chunkSize + 1, knowElement,
+							            &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findPOByKnowBufferTask, this, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
+				}
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkCount; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		} else {
+			EntityIDBuffer tempBuffer[chunkLeft];
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findPOByKnowBufferTask, this, p, 1, knowElement, &tempBuffer[i]));
+				p += 1;
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		}
+		buffer->sort(1);
+	}
+	return OK;
+}
+
+Status
+FindEntityID::findPOByKnowBufferTask(ID *p, size_t length, EntityType knowElement, EntityIDBuffer *resultBuffer) {
+	EntityIDBuffer tempBuffer;
+	unsigned i = 0, j = 0;
+	resultBuffer->setIDCount(2);
+	resultBuffer->setSortKey(1);
+	if (knowElement == PREDICATE) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findObjectIDByPredicate(key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID(key);
+				resultBuffer->insertID((tempBuffer)[j]);
+			}
+		}
+	} else if (knowElement == OBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findPredicateIDByObject(key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID((tempBuffer)[j]);
+				resultBuffer->insertID(key);
+			}
+		}
+	}
+	return OK;
+}
+
+Status
+FindEntityID::findSOByKnowBuffer(ID preID, EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
+	buffer->setIDCount(2);
+	buffer->setSortKey(10);//unsorted
+	if (knowBuffer->sorted == false)
+		return ERROR;
+	if (knowBuffer->getSize() == 0) {
+		return ERROR;
+	} else {
+		EntityIDBuffer transBuffer;
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
+		int IDCount = knowBuffer->getIDCount();
+		int sortKey = knowBuffer->getSortKey();
+		if (IDCount > 1) {
+			for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+				key = *(p + i * IDCount + sortKey);
+				if (key > lastKey) {
+					transBuffer.insertID(key);
+					lastKey = key;
+				}
+			}
+		} else {
+			transBuffer = (knowBuffer);
+		}
+		size_t size = transBuffer.getSize();
+		unsigned chunkCount = THREAD_NUMBER;
+		size_t chunkSize = size / chunkCount;
+		size_t chunkLeft = size % chunkCount;
+		p = transBuffer.getBuffer();
+
+		if (chunkSize) {
+			EntityIDBuffer tempBuffer[chunkCount];
+			for (unsigned i = 0; i < chunkCount; i++) {
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSOByKnowBufferTask1, this, preID, p, chunkSize + 1,
+							            knowElement, &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSOByKnowBufferTask1, this, preID, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
+				}
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkCount; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		} else {
+			EntityIDBuffer tempBuffer[chunkLeft];
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findSOByKnowBufferTask1, this, preID, p, 1, knowElement,
+						            &tempBuffer[i]));
+				p += 1;
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		}
+		buffer->sort(1);
+
+	}
+	return OK;
+}
+
+Status FindEntityID::findSOByKnowBufferTask1(ID preID, ID *p, size_t length, EntityType knowElement,
+                                             EntityIDBuffer *resultBuffer) {
+	EntityIDBuffer tempBuffer;
+	unsigned i = 0, j = 0;
+	resultBuffer->setIDCount(2);
+	resultBuffer->setSortKey(1);
+	if (knowElement == SUBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findObjectIDByPredicateAndSubject(preID, key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID(key);
+				resultBuffer->insertID((tempBuffer)[j]);
+			}
+		}
+	} else if (knowElement == OBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findSubjectIDByPredicateAndObject(preID, key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID((tempBuffer)[j]);
+				resultBuffer->insertID(key);
+			}
+		}
+	}
+	return OK;
+}
+
+Status
+FindEntityID::findOSByKnowBuffer(ID preID, EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
+	buffer->setIDCount(2);
+	buffer->setSortKey(10);//unsorted
+	if (knowBuffer->sorted == false)
+		return ERROR;
+	if (knowBuffer->getSize() == 0) {
+		return ERROR;
+	} else {
+		EntityIDBuffer transBuffer;
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
+		int IDCount = knowBuffer->getIDCount();
+		int sortKey = knowBuffer->getSortKey();
+		if (IDCount > 1) {
+			for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+				key = *(p + i * IDCount + sortKey);
+				if (key > lastKey) {
+					transBuffer.insertID(key);
+					lastKey = key;
+				}
+			}
+		} else {
+			transBuffer = (knowBuffer);
+		}
+
+		size_t size = transBuffer.getSize();
+		unsigned chunkCount = THREAD_NUMBER;
+		size_t chunkSize = size / chunkCount;
+		size_t chunkLeft = size % chunkCount;
+		p = transBuffer.getBuffer();
+
+		if (chunkSize) {
+			EntityIDBuffer tempBuffer[chunkCount];
+			for (unsigned i = 0; i < chunkCount; i++) {
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findOSByKnowBufferTask1, this, preID, p, chunkSize + 1,
+							            knowElement, &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findOSByKnowBufferTask1, this, preID, p, chunkSize, knowElement,
+							            &tempBuffer[i]));
+					p += chunkSize;
+				}
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkCount; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		} else {
+			EntityIDBuffer tempBuffer[chunkLeft];
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findOSByKnowBufferTask1, this, preID, p, 1, knowElement,
+						            &tempBuffer[i]));
+				p += 1;
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		}
+		buffer->sort(1);
+	}
+	return OK;
+}
+
+Status FindEntityID::findOSByKnowBufferTask1(ID preID, ID *p, size_t length, EntityType knowElement,
+                                             EntityIDBuffer *resultBuffer) {
+	if (length == 0)
+		return OK;
+	EntityIDBuffer tempBuffer;
+	unsigned i = 0, j = 0;
+	resultBuffer->setIDCount(2);
+	resultBuffer->setSortKey(1);
+	if (knowElement == OBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findSubjectIDByPredicateAndObject(preID, key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID(key);
+				resultBuffer->insertID((tempBuffer)[j]);
+			}
+		}
+	} else if (knowElement == SUBJECT) {
+		for (i = 0; i < length; i++) {
+			ID key = *(p + i);
+			findObjectIDByPredicateAndSubject(preID, key, &tempBuffer, 0, UINT_MAX);
+			unsigned tempSize = tempBuffer.getSize();
+			for (j = 0; j < tempSize; j++) {
+				resultBuffer->insertID((tempBuffer)[j]);
+				resultBuffer->insertID(key);
+			}
+		}
+	}
+	return OK;
+}
+
+Status
+FindEntityID::findSByKnowBuffer(ID preID, EntityIDBuffer *buffer, EntityIDBuffer *knowBuffer, EntityType knowElement) {
+	buffer->setIDCount(2);
+	buffer->setSortKey(10);//unsorted
+	if (!knowBuffer->sorted) {
+		return ERROR;
+	}
+	if (knowBuffer->getSize() == 0) {
+		return ERROR;
+	}
+	if (knowElement == SUBJECT) {
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
+		int IDCount = knowBuffer->getIDCount();
+		int sortKey = knowBuffer->getSortKey();
+		if (IDCount > 1) {
+			for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+				key = *(p + i * IDCount + sortKey);
+				if (key > lastKey) {
+					buffer->insertID(key);
+					lastKey = key;
+				}
+			}
+		} else {
+			(*buffer) = (knowBuffer);
+		}
+
+		return ERROR;
+	} else {
+		EntityIDBuffer transBuffer;
+		ID key = 0, lastKey = 0;
+		ID *p = knowBuffer->getBuffer();
+		int IDCount = knowBuffer->getIDCount();
+		int sortKey = knowBuffer->getSortKey();
+		if (IDCount > 1) {
+			for (unsigned i = 0; i < knowBuffer->getSize(); i++) {
+				key = *(p + i * IDCount + sortKey);
+				if (key > lastKey) {
+					transBuffer.insertID(key);
+					lastKey = key;
+				}
+			}
+		} else {
+			transBuffer = (knowBuffer);
+		}
+		transBuffer.print();
+		size_t size = transBuffer.getSize();
+		unsigned chunkCount = THREAD_NUMBER;
+		size_t chunkSize = size / chunkCount;
+		size_t chunkLeft = size % chunkCount;
+		p = transBuffer.getBuffer();
+
+		if (chunkSize) {
+			EntityIDBuffer tempBuffer[chunkCount];
+			for (unsigned i = 0; i < chunkCount; i++) {
+				if (i < chunkLeft) {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSByKnowBufferTask1, this, preID, p, chunkSize + 1,
+							            &tempBuffer[i]));
+					p += (chunkSize + 1);
+				} else {
+					CThreadPool::getInstance().AddTask(
+							boost::bind(&FindEntityID::findSByKnowBufferTask1, this, preID, p, chunkSize,
+							            &tempBuffer[i]));
+					p += chunkSize;
+				}
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkCount; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		} else {
+			EntityIDBuffer tempBuffer[chunkLeft];
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				CThreadPool::getInstance().AddTask(
+						boost::bind(&FindEntityID::findSByKnowBufferTask1, this, preID, p, 1, &tempBuffer[i]));
+				p += 1;
+			}
+			CThreadPool::getInstance().Wait();
+			for (unsigned i = 0; i < chunkLeft; i++) {
+				buffer->appendBuffer(&tempBuffer[i]);
+			}
+		}
+		buffer->sort(1);
+	}
+	return OK;
+}
+
+Status FindEntityID::findSByKnowBufferTask1(ID preID, ID *p, size_t length, EntityIDBuffer *resultBuffer) {
+	EntityIDBuffer tempBuffer;
+	unsigned i = 0, j = 0;
+	resultBuffer->setIDCount(2);
+	resultBuffer->setSortKey(1);
+	for (i = 0; i < length; i++) {
+		ID key = *(p + i);
+		findSubjectIDByPredicateAndObject(preID, key, &tempBuffer, 0, UINT_MAX);
+		unsigned tempSize = tempBuffer.getSize();
+		for (j = 0; j < tempSize; j++) {
+			resultBuffer->insertID((tempBuffer)[j]);
+		}
+	}
+	return OK;
 }

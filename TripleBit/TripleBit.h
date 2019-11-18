@@ -23,6 +23,7 @@
 #include <math.h>
 #include <sys/time.h>
 #include <stack>
+
 using namespace std;
 
 #include <boost/bind.hpp>
@@ -63,7 +64,7 @@ const unsigned int SECONDARY_HASH_RANGE = 10;
 const unsigned int SECONDARY_HASH_CAPACITY = 100000 / SECONDARY_HASH_RANGE;
 const unsigned int SECONDARY_HASH_CAPACITY_INCREASE = 100000 / SECONDARY_HASH_RANGE;
 
-extern char* DATABASE_PATH;
+extern char *DATABASE_PATH;
 
 //thread pool
 const unsigned int THREAD_NUMBER = 8; //should be 2^n;
@@ -92,11 +93,11 @@ enum Status {
 	BUFFER_NOT_FOUND,
 	ENTITY_NOT_INCLUDED,
 	NO_HIT,
-	NOT_OPENED, 	// file was not previously opened
-	END_OF_FILE, 	// read beyond end of file or no space to extend file
-	LOCK_ERROR, 	// file is used by another program
+	NOT_OPENED,    // file was not previously opened
+	END_OF_FILE,    // read beyond end of file or no space to extend file
+	LOCK_ERROR,    // file is used by another program
 	NO_MEMORY,
-	URID_NOT_FOUND ,
+	URID_NOT_FOUND,
 	ALREADY_EXISTS,
 	NOT_FOUND,
 	CREATE_FAILURE,
@@ -109,13 +110,12 @@ enum Status {
 };
 
 //join shape of patterns within a join variable.
-enum JoinShape{
+enum JoinShape {
 	STAR,
 	CHAIN
 };
 
-enum EntityType
-{
+enum EntityType {
 	PREDICATE = 1 << 0,
 	SUBJECT = 1 << 1,
 	OBJECT = 1 << 2,
@@ -124,7 +124,7 @@ enum EntityType
 
 typedef long long int64;
 typedef unsigned char word;
-typedef word* word_prt;
+typedef word *word_prt;
 typedef word_prt bitVector_ptr;
 typedef unsigned int ID;
 typedef unsigned int SOID;
@@ -133,11 +133,11 @@ typedef bool status;
 typedef short COMPRESS_UNIT;
 typedef unsigned int uint;
 typedef unsigned char uchar;
-typedef unsigned short     ushort;
+typedef unsigned short ushort;
 typedef unsigned long long ulonglong;
-typedef long long          longlong;
-typedef size_t       OffsetType;
-typedef size_t       HashCodeType;
+typedef long long longlong;
+typedef size_t OffsetType;
+typedef size_t HashCodeType;
 
 extern const ID INVALID_ID;
 
@@ -166,34 +166,39 @@ inline unsigned char Type_2_Length(unsigned char type) {
 	return (type - 1) / 4 + (type - 1) % 4 + 2;
 }
 
-inline void Type_2_Length(unsigned char type, unsigned char& xLen, unsigned char& yLen)
-{
+inline void Type_2_Length(unsigned char type, unsigned char &xLen, unsigned char &yLen) {
 	xLen = (type - 1) / 4 + 1;
 	yLen = (type - 1) % 4 + 1;
 }
 
 struct LengthString {
-	const char * str;
+	const char *str;
 	uint length;
-	void dump(FILE * file) {
+
+	void dump(FILE *file) {
 		for (uint i = 0; i < length; i++)
 			fputc(str[i], file);
 	}
+
 	LengthString() :
-		str(NULL), length(0) {
+			str(NULL), length(0) {
 	}
-	LengthString(const char * str) {
+
+	LengthString(const char *str) {
 		this->str = str;
 		this->length = strlen(str);
 	}
-	LengthString(const char * str, uint length) {
+
+	LengthString(const char *str, uint length) {
 		this->str = str;
 		this->length = length;
 	}
-	LengthString(const std::string & rhs) :
-		str(rhs.c_str()), length(rhs.length()) {
+
+	LengthString(const std::string &rhs) :
+			str(rhs.c_str()), length(rhs.length()) {
 	}
-	bool equals(LengthString * rhs) {
+
+	bool equals(LengthString *rhs) {
 		if (length != rhs->length)
 			return false;
 		for (uint i = 0; i < length; i++)
@@ -201,7 +206,8 @@ struct LengthString {
 				return false;
 		return true;
 	}
-	bool equals(const char * str, uint length) {
+
+	bool equals(const char *str, uint length) {
 		if (this->length != length)
 			return false;
 		for (uint i = 0; i < length; i++)
@@ -209,15 +215,17 @@ struct LengthString {
 				return false;
 		return true;
 	}
-	bool equals(const char * str) {
-		if(length != strlen(str))
+
+	bool equals(const char *str) {
+		if (length != strlen(str))
 			return false;
 		for (uint i = 0; i < length; i++)
 			if (this->str[i] != str[i])
 				return false;
 		return str[length] == 0;
 	}
-	bool copyTo(char * buff, uint bufflen) {
+
+	bool copyTo(char *buff, uint bufflen) {
 		if (length < bufflen) {
 			for (uint i = 0; i < length; i++)
 				buff[i] = str[i];

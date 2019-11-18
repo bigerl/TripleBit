@@ -14,29 +14,40 @@
 //---------------------------------------------------------------------------
 
 class SPARQLLexer;
+
 class SPARQLParser;
+
 class QuerySemanticAnalysis;
+
 class PlanGenerator;
+
 class TripleBitQuery;
+
 class TripleBitQueryGraph;
+
 class TripleBitRepository;
+
 class TripleBitBuilder;
 
 #include "TripleBit.h"
 #include <string>
+
 using namespace std;
 
 class RDFQuery {
 private:
-	QuerySemanticAnalysis* semAnalysis;
-	PlanGenerator* planGen;
-	TripleBitQuery* bitmapQuery;
-	TripleBitQueryGraph* queryGraph;
-	TripleBitRepository* repo;
+	QuerySemanticAnalysis *semAnalysis;
+	PlanGenerator *planGen;
+	TripleBitQuery *bitmapQuery;
+	TripleBitQueryGraph *queryGraph;
+	TripleBitRepository *repo;
 public:
-	RDFQuery(TripleBitQuery* _bitmapQuery, TripleBitRepository* _repo);
-	Status Execute(string& queryString, vector<string>& resultSet);
+	RDFQuery(TripleBitQuery *_bitmapQuery, TripleBitRepository *_repo);
+
+	Status Execute(string &queryString, vector<string> &resultSet);
+
 	void Print();
+
 	virtual ~RDFQuery();
 };
 

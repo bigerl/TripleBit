@@ -25,36 +25,42 @@ class CThreadPool;
 class CTask {
 protected:
 	string m_strTaskName; //the name of the task
-	void* m_ptrData; //the data of the task to be executed
+	void *m_ptrData; //the data of the task to be executed
 public:
 	CTask() {}
+
 	virtual ~CTask() {}
+
 	CTask(string taskName) {
 		this->m_strTaskName = taskName;
 		m_ptrData = NULL;
 	}
-	virtual int Run()= 0;
-	void SetData(void* data); //set task data
+
+	virtual int Run() = 0;
+
+	void SetData(void *data); //set task data
 };
 
 class CThreadPool {
 public:
-	typedef boost::function<void ()> Task;
+	typedef boost::function<void()> Task;
 private:
 	vector<Task> m_vecTaskList; //task list
 	int m_iThreadNum; //the No of threads
 	vector<pthread_t> m_vecIdleThread; //idle thread list
 	vector<pthread_t> m_vecBusyThread; //busy thread list
 
-	static CThreadPool* instance;				//the thread pool instance;
+	static CThreadPool *instance;                //the thread pool instance;
 protected:
 	friend class CTask;
-	static void* ThreadFunc(void * threadData); //new thread function
+
+	static void *ThreadFunc(void *threadData); //new thread function
 	int MoveToIdle(pthread_t tid); //move the idle when the task complete
 	int MoveToBusy(pthread_t tid); //move the tid to busy list
 	int Create(); //create task
 public:
-	static CThreadPool& getInstance();
+	static CThreadPool &getInstance();
+
 	pthread_mutex_t m_pthreadMutex; //used to syn
 	pthread_mutex_t m_pthreadIdleMutex;
 	pthread_mutex_t m_pthreadBusyMutex;
@@ -62,16 +68,19 @@ public:
 	pthread_cond_t m_pthreadEmpty;
 	pthread_cond_t m_pthreadBusyEmpty;
 	bool shutdown;
+
 	CThreadPool(int threadNum);
+
 	~CThreadPool();
-	int AddTask(const Task& task);	// Add the task to List
+
+	int AddTask(const Task &task);    // Add the task to List
 	int StopAll();
-	int Wait();				 //waiting for task complete!
+
+	int Wait();                 //waiting for task complete!
 };
 
-struct ThreadPoolArg
-{
-	CThreadPool* pool;
-	vector<CThreadPool::Task>* taskList;
+struct ThreadPoolArg {
+	CThreadPool *pool;
+	vector<CThreadPool::Task> *taskList;
 };
 #endif /* THREADPOOL_H_ */
