@@ -64,22 +64,22 @@ make -j
 Using:
 ------
 
-TripleBit currently includes three high-level executables. The first (buildTripleBitFromN3)
-is used to build a new database from an turtle/ntriples input:
+TripleBit currently includes three high-level executables. The first `buildTripleBitFromN3`) is used to build a new database from an turtle/ntriples input:
 
-   buildTripleBitFromN3 mydata.n3 database_directory
+    buildTripleBitFromN3 mydata.n3 database_directory
 
-The input file can be arbitrarily large, the buildTripleBitFromN3 spools to disk if
-main memory is exhausted.
+The input file can be arbitrarily large, the `buildTripleBitFromN3` spools to disk if main memory is exhausted.
 
-The second (buildTripleBitFromRDF) is similar to the first executable except the 
-input file is a rdf file.
+The second (`buildTripleBitFromRDF`) is similar to the first executable except the input file is a rdf file.
 
-After loading the database can be queried with triplebitQuery:
+After loading the database can be queried with `triplebitQuery`:
 
-   triplebitQuery database_directory query_directory
+~~triplebitQuery database_directory query_directory~~
+   
+    triplebitQuery database_directory
 
 The program shows a command prompt and accept SPARQL queries.
+Just type your SPARQL query in a single line and press ENTER. 
 
 Note: TripleBit currently only supports "select" queries.
 

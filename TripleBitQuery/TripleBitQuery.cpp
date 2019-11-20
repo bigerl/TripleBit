@@ -19,8 +19,8 @@ char *DATABASE_PATH;
 char *QUERY_PATH;
 
 int main(int argc, char *argv[]) {
-	if (argc != 3) {
-		fprintf(stderr, "Usage: %s <Database Directory> <Query files Directory>\n", argv[0]);
+	if (argc < 2 or std::string(argv[1]) == std::string("--help")) {
+		fprintf(stderr, "Usage: %s <Database Directory>\n", argv[0]);
 		return -1;
 	}
 
@@ -28,10 +28,9 @@ int main(int argc, char *argv[]) {
 
 	TripleBitRepository *repo = TripleBitRepository::create(DATABASE_PATH);
 	if (repo == NULL) {
+		fprintf(stderr, "Usage: %s <Database Directory>\n", argv[0]);
 		return -1;
 	}
-
-	QUERY_PATH = argv[2];
 
 	repo->cmd_line();
 	delete repo;
