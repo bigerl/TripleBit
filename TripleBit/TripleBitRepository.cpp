@@ -243,10 +243,10 @@ TripleBitRepository *TripleBitRepository::create(const string path) {
 	repo->objectStat = OneConstantStatisticsBuffer::load(StatisticsBuffer::OBJECT_STATIS, statFilename, indexBuffer);
 	statFilename = path + "/subjectpredicate_statis";
 	repo->subPredicateStat = TwoConstantStatisticsBuffer::load(StatisticsBuffer::SUBJECTPREDICATE_STATIS, statFilename,
-	                                                           indexBuffer);
+															   indexBuffer);
 	statFilename = path + "/objectpredicate_statis";
 	repo->objPredicateStat = TwoConstantStatisticsBuffer::load(StatisticsBuffer::OBJECTPREDICATE_STATIS, statFilename,
-	                                                           indexBuffer);
+															   indexBuffer);
 
 #ifdef DEBUG
 	cout<<"subject count: "<<((OneConstantStatisticsBuffer*)repo->subjectStat)->getEntityCount()<<endl;
@@ -296,19 +296,18 @@ Status TripleBitRepository::nextResult(string &str) {
 
 Status TripleBitRepository::execute(string queryStr) {
 	resultSet.resize(0);
-	query->Execute(queryStr, resultSet);
+	Status status1 = query->Execute(queryStr, resultSet);
 
 	bitmapQuery->releaseBuffer();
 	bitmapQuery->releaseBuffer();
-	return OK;
+	return status1;
 }
 
 extern char *QUERY_PATH;
 
 void TripleBitRepository::cmd_line() {
+
 	while (true) {
-		std::cout << ">>>";
-		flush(std::cout);
 
 		string query;
 		std::getline(std::cin, query);
@@ -316,7 +315,14 @@ void TripleBitRepository::cmd_line() {
 		query.append(" ");
 		if (query.length() == 0)
 			continue;
-		execute(query);
+		Status status1 = execute(query);
+		std::string message;
+		if (status1 == OK)
+			message = "QUERY SUCCEEDED";
+		else
+			message = "QUERY FAILED";
+
+		std::cerr << message << std::endl;
 	}
 
 }
