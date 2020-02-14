@@ -22,21 +22,25 @@ addons:
       - cmake
 
 install:
-  - wget https://curl.haxx.se/download/archeology/curl-7.19.7.tar.gz
-  - tar -xvzf curl-7.19.7.tar.gz
-  - cd curl-7.19.7/
-  - ./configure
-  - make -j
-  - sudo make install
+  - [[ -d curl-7.19.7 ]] || wget https://curl.haxx.se/download/archeology/curl-7.19.7.tar.gz && \
+    tar -xvzf curl-7.19.7.tar.gz && \
+    cd curl-7.19.7/ && \
+    ./configure && \
+    make -j && \
+    cd -
+  - cd curl-7.19.7/ && \
+    sudo make install
   - cd ../
     # old raptor
-  - wget http://download.librdf.org/source/raptor-1.4.21.tar.gz
-  - tar -xvzf raptor-1.4.21.tar.gz
-  - cd raptor-1.4.21
-  - ./autogen.sh 
-  - ./configure
-  - make -j
-  - sudo make install 
+  - [[ -d raptor-1.4.21 ]] || wget http://download.librdf.org/source/raptor-1.4.21.tar.gz && \
+    tar -xvzf raptor-1.4.21.tar.gz && \
+    cd raptor-1.4.21 && \
+    ./autogen.sh && \
+    ./configure && \
+    make -j && \
+    cd -
+  - cd raptor-1.4.21 && \ 
+    sudo make install 
   - cd ../
 
 
@@ -49,12 +53,12 @@ script:
   - make
   - pwd
   - ls -lh .
-  - ls -lh $TRAVIS_BUILD_DIR/TripleBit/bin/
-  - ls -lh $TRAVIS_BUILD_DIR/TripleBit/bin/lrelease/
+  - ls -lh bin/
+  - ls -lh bin/lrelease/
 
 deploy:
   provider: releases
   api_key: "GITHUB OAUTH TOKEN"
-  file: "$TRAVIS_BUILD_DIR/bin/lrelease/TripleBitQuery"
+  file: "bin/lrelease/TripleBitQuery"
   skip_cleanup: true
   draft: true
