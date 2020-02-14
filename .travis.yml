@@ -41,14 +41,10 @@ cache:
 
 script:
   - make
-  - pwd
-  - ls -lh .
-  - ls -lh bin/
-  - ls -lh bin/lrelease/
 
 deploy:
   provider: releases
   api_key: "GITHUB OAUTH TOKEN"
-  file: "bin/lrelease/TripleBitQuery"
+  file: "bin/lrelease/*"
   skip_cleanup: true
   draft: true
