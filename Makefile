@@ -5,7 +5,7 @@ COMPILER := g++
 
 # release
 BINARY_DIR := bin/lrelease
-CPPFLAGS := -Wall -g -O3 `raptor-config --cflags`
+CPPFLAGS := -Wall -std=c++98 -g -O3 `raptor-config --cflags`
 LIBS := -lpthread -L/usr/local/lib `raptor-config --libs`
 
 # debug
