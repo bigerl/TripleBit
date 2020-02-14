@@ -1,0 +1,57 @@
+os: linux
+dist: bionic
+language: cpp
+
+addons:
+  apt:
+    packages:
+      - librdf0-dev 
+      - libxml2-dev 
+      - flex
+      - bison 
+      - autopoint
+      - gtk-doc-tools
+      - libtool
+      - m4
+      - automake
+      - gcc
+      - g++
+      - build-essential
+      - git
+      - libboost-all-dev
+      - cmake
+
+install:
+  - wget https://curl.haxx.se/download/archeology/curl-7.19.7.tar.gz
+  - tar -xvzf curl-7.19.7.tar.gz
+  - cd curl-7.19.7/
+  - ./configure
+  - make -j
+  - sudo make install
+  - cd ../
+    # old raptor
+  - wget http://download.librdf.org/source/raptor-1.4.21.tar.gz
+  - tar -xvzf raptor-1.4.21.tar.gz
+  - cd raptor-1.4.21
+  - ./autogen.sh 
+  - ./configure
+  - make -j
+  - sudo make install 
+  - cd ../
+
+
+cache:
+  directories:
+    - curl-7.19.7
+    - raptor-1.4.21
+
+before_script:
+  - git clone https://github.com/nitingupta910/TripleBit
+  - cd TripleBit
+  - mkdir -p build
+  - cd build
+  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release .. 
+  - make -
+
+script:
+  - make
