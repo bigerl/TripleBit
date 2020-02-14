@@ -45,13 +45,5 @@ cache:
     - curl-7.19.7
     - raptor-1.4.21
 
-before_script:
-  - git clone https://github.com/nitingupta910/TripleBit
-  - cd TripleBit
-  - mkdir -p build
-  - cd build
-  - cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release .. 
-  - make -
-
 script:
-  - make
+  - mkdir build && cd build && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..  && make
