@@ -47,3 +47,12 @@ cache:
 
 script:
   - make
+  - ls -lh /home/travis/build/dice-group/TripleBit/TripleBit/bin/
+  - ls -lh /home/travis/build/dice-group/TripleBit/TripleBit/bin/lrelease/
+
+deploy:
+  provider: releases
+  api_key: "GITHUB OAUTH TOKEN"
+  file: "/home/travis/build/dice-group/TripleBit/TripleBit/bin/lrelease/TripleBitQuery"
+  skip_cleanup: true
+  draft: true
