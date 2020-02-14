@@ -23,11 +23,11 @@ addons:
 
 install:
     # old curl
-  - [[ -d curl-7.19.7 ]] || ( wget https://curl.haxx.se/download/archeology/curl-7.19.7.tar.gz && tar -xvzf curl-7.19.7.tar.gz && cd curl-7.19.7/ && ./configure && make -j cd - )
+  - if [ -d curl-7.19.7 ]; then ( wget https://curl.haxx.se/download/archeology/curl-7.19.7.tar.gz && tar -xvzf curl-7.19.7.tar.gz && cd curl-7.19.7/ && ./configure && make -j cd - ); fi
   - cd curl-7.19.7/ && sudo make install
   - cd ../
     # old raptor
-  - [[ -d raptor-1.4.21 ]] || ( wget http://download.librdf.org/source/raptor-1.4.21.tar.gz && tar -xvzf raptor-1.4.21.tar.gz && cd raptor-1.4.21 && ./autogen.sh && ./configure && make -j && cd - )
+  - if [ -d raptor-1.4.21 ]; then ( wget http://download.librdf.org/source/raptor-1.4.21.tar.gz && tar -xvzf raptor-1.4.21.tar.gz && cd raptor-1.4.21 && ./autogen.sh && ./configure && make -j && cd - ); fi
   - cd raptor-1.4.21 && sudo make install 
   - cd ../
 
