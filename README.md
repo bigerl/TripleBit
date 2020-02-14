@@ -45,21 +45,12 @@ cd ../
 Building:
 ---------
 
-~~TripleBit must be build using GNU make and a reasonable C++ compiler. Ideally a simple~~
+TripleBit must be build using GNU make and a reasonable C++ compiler. Ideally a simple
 
-   ~~make~~
+   make
 
-~~is enough, it will build the tree high-level executables in bin/lrelease/.~~
+is enough, it will build the tree high-level executables in bin/lrelease/.
 
-After installing the perquisites, run the following commands to clone and build TripleBit.
-```bash
-git clone https://github.com/nitingupta910/TripleBit
-cd TripleBit
-mkdir -p build
-cd build
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release .. 
-make -j
-```
 
 Using:
 ------
