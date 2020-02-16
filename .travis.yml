@@ -22,21 +22,15 @@ addons:
       - cmake
 
 install:
-  - wget https://curl.haxx.se/download/archeology/curl-7.19.7.tar.gz
-  - tar -xvzf curl-7.19.7.tar.gz
-  - cd curl-7.19.7/
-  - ./configure
-  - make -j
-  - sudo make install
+    # old curl
+  - pwd
+  - ls -lh
+  - if [ ! -d curl-7.19.7 ]; then ( wget https://curl.haxx.se/download/archeology/curl-7.19.7.tar.gz && tar -xvzf curl-7.19.7.tar.gz && cd curl-7.19.7/ && ./configure && make -j && cd - ); fi
+  - cd curl-7.19.7/ && sudo make install
   - cd ../
     # old raptor
-  - wget http://download.librdf.org/source/raptor-1.4.21.tar.gz
-  - tar -xvzf raptor-1.4.21.tar.gz
-  - cd raptor-1.4.21
-  - ./autogen.sh 
-  - ./configure
-  - make -j
-  - sudo make install 
+  - if [ ! -d raptor-1.4.21 ]; then ( wget http://download.librdf.org/source/raptor-1.4.21.tar.gz && tar -xvzf raptor-1.4.21.tar.gz && cd raptor-1.4.21 && ./autogen.sh && ./configure && make -j && cd - ); fi
+  - cd raptor-1.4.21 && sudo make install 
   - cd ../
 
 
@@ -47,3 +41,15 @@ cache:
 
 script:
   - make
+  
+deploy:
+  provider: releases
+  file: 
+    - "bin/lrelease/buildTripleBitFromN3"
+    - "bin/lrelease/triplebitQuery"
+  token: $github_token
+  draft: true
+  cleanup: false
+  skip_cleanup: true
+  
+
