@@ -12,7 +12,7 @@ LIBS := -lpthread -L/usr/local/lib `raptor-config --libs`
 # BINARY_DIR := bin/ldebug
 # CPPFLAGS := -g -fPIC -DDEBUG
 COMPILE.cpp = $(COMPILER) $(CFLAGS) $(CPPFLAGS) -c
-LINK.cpp = $(COMPILER) $(LIBS)
+LINK.cpp = $(COMPILER) $(LIBS) -static
 
 %.o: %.cpp
 	#$(call make-depend,$<,$@,$(subst .o,.d,$@))
